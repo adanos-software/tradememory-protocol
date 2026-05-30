@@ -9,9 +9,10 @@ class Bucket:
     fills: list = field(default_factory=list)
     ledger: list = field(default_factory=list)
     equity_end: float | None = None
+    orders: list = field(default_factory=list)
 
 
-def bucketize(traj, origin_ms, end_ms, bucket_ms):
+def bucketize(traj, origin_ms, end_ms, bucket_ms, orders=None):
     if origin_ms >= end_ms:
         return []
     n = (end_ms - origin_ms + bucket_ms - 1) // bucket_ms
@@ -27,6 +28,12 @@ def bucketize(traj, origin_ms, end_ms, bucket_ms):
     for ev in traj.ledger:
         if origin_ms <= ev.time < end_ms:
             buckets[idx(ev.time)].ledger.append(ev)
+
+    if orders is not None:
+        for o in orders:
+            ts = o["ts"]
+            if origin_ms <= ts < end_ms:
+                buckets[idx(ts)].orders.append(o)
 
     # Carry-forward equity: bucket.equity_end = latest point with time <= end_ms.
     # Pre-origin equity points (time < origin_ms) are INTENTIONALLY carried into bucket 0 as

@@ -44,3 +44,23 @@ def stop_order_rate(raw_orders):
     n_stop = sum(1 for o in raw_orders
                  if o.get("isTrigger") or o.get("isPositionTpsl"))
     return n_stop / len(raw_orders)
+
+
+def order_events(raw_orders):
+    """Normalise raw order records into a flat list of dicts.
+
+    Each output dict has keys:
+      coin       : str
+      ts         : int  (epoch ms)
+      is_trigger : bool (True if isTrigger or isPositionTpsl)
+
+    Additive — does not alter any existing normalize functions.
+    """
+    out = []
+    for o in raw_orders:
+        out.append({
+            "coin": o["coin"],
+            "ts": int(o["timestamp"]),
+            "is_trigger": bool(o.get("isTrigger") or o.get("isPositionTpsl")),
+        })
+    return out
