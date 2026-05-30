@@ -126,3 +126,79 @@ def test_bucketize_with_orders_assigns_to_bucket():
     # order at ts=5 is in [0, H) → bucket 0
     assert any(o["is_trigger"] for o in buckets[0].orders)
     assert buckets[1].orders == []
+
+
+# ---------------------------------------------------------------------------
+# Task 6 — Tilt axis
+# ---------------------------------------------------------------------------
+
+def test_topup_count_from_deposit_ledger():
+    from research.hyperliquid.models import LedgerEvent
+    traj = mk_traj(equity=mk_eq([(0, 100), (H, 100)]),
+                   ledger=[LedgerEvent(5, "deposit", 500.0),
+                           LedgerEvent(6, "withdraw", 100.0)])
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["topup_count"] == 1
+
+
+def test_topup_count_multiple_deposits():
+    from research.hyperliquid.models import LedgerEvent
+    traj = mk_traj(equity=mk_eq([(0, 100), (H, 100)]),
+                   ledger=[LedgerEvent(1, "deposit", 100.0),
+                           LedgerEvent(2, "deposit", 200.0),
+                           LedgerEvent(3, "funding", 5.0)])
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["topup_count"] == 2
+
+
+def test_loser_add_counts_adding_into_losing_position():
+    traj = mk_traj(trades=[mk_trade(2, direction="Open Long", px=100, sz=1),
+                           mk_trade(6, direction="Open Long", px=90, sz=1)],
+                   equity=mk_eq([(0, 100), (H, 80)]))
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={"BTC": 1.0}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["loser_add_count"] == 1
+
+
+def test_loser_add_zero_when_adding_into_winning_position():
+    # Long at 100, then add at 110 (winning) → loser_add should be 0
+    traj = mk_traj(trades=[mk_trade(2, direction="Open Long", px=100, sz=1),
+                           mk_trade(6, direction="Open Long", px=110, sz=1)],
+                   equity=mk_eq([(0, 100), (H, 120)]))
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={"BTC": 1.0}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["loser_add_count"] == 0
+
+
+def test_fill_rate_spike_zero_when_no_history():
+    # First bucket: no trailing history → 0
+    traj = mk_traj(trades=[mk_trade(5, direction="Open Long", px=100, sz=1)],
+                   equity=mk_eq([(0, 100), (H, 100)]))
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={"BTC": 1.0}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["fill_rate_spike"] == 0.0
+
+
+def test_fill_rate_spike_ratio_over_trailing_mean():
+    # Bucket 0: 1 fill → stored in history
+    # Bucket 1: 4 fills → spike = 4 / 1 = 4.0
+    traj = mk_traj(
+        trades=[mk_trade(5, direction="Open Long", px=100, sz=1),
+                mk_trade(H + 1, direction="Open Long", px=100, sz=1),
+                mk_trade(H + 2, direction="Open Long", px=100, sz=1),
+                mk_trade(H + 3, direction="Open Long", px=100, sz=1),
+                mk_trade(H + 4, direction="Open Long", px=100, sz=1)],
+        equity=mk_eq([(0, 100), (H, 100), (2 * H, 100)]),
+    )
+    buckets = bucketize(traj, 0, 2 * H, H)
+    st = PrimitiveState(coin_sigma={"BTC": 1.0}, pooled_sigma=1.0)
+    st.bucket_values(buckets[0])
+    vals = st.bucket_values(buckets[1])
+    assert vals["fill_rate_spike"] == 4.0
