@@ -112,6 +112,19 @@ def _mad(xs):
     return _median([abs(x - m) for x in xs])
 
 
+def _std(xs):
+    if len(xs) < 2:
+        return 0.0
+    m = sum(xs) / len(xs)
+    return (sum((x - m) ** 2 for x in xs) / len(xs)) ** 0.5
+
+
+def _scale(xs):
+    # Robust scale: std (stays >0 for sparse count/rate primitives where MAD=0),
+    # floored. Using MAD here makes sparse primitives' z-scores blow up -> type_i~1.
+    return max(_std(xs), 0.05 * (1.0 + abs(_median(xs))), 1e-3)
+
+
 def master_bucket_primitives(traj, orders, end_ms):
     """Run the master's history through bucketize+PrimitiveState, return the list
     of per-bucket 9-primitive dicts over [first_trade, end_ms)."""
@@ -191,7 +204,7 @@ def main():
             PROGRESS.write_text(f"tuning {i+1}/{len(tuning)} | included={n_included} | {time.time()-start:.0f}s\n")
 
     # Real universe anchors
-    anchors = {a: {p: {"median": _median(pooled_series[p]), "mad": (_mad(pooled_series[p]) or 1e-6)}
+    anchors = {a: {p: {"median": _median(pooled_series[p]), "mad": _scale(pooled_series[p])}
                    for p in PRIMITIVES[a]} for a in AXES}
     cov = spearman_cov(pooled_series) if all(pooled_series[p] for p in PRIM_ORDER) else \
           {p: {q: (1.0 if p == q else 0.0) for q in PRIM_ORDER} for p in PRIM_ORDER}
@@ -208,6 +221,19 @@ def main():
         kappa_options=(14,),
     )
     win = cal["winning_tuple"]
+    winner_is_fallback = False
+    if win is None:
+        # no cell hit power>=0.70 & type_i<=0.05; pick lowest-type_i then highest-power
+        # for an INDICATIVE-only holdout run (clearly flagged).
+        rows = sorted(cal["grid_rows"], key=lambda r: (r["type_i"], -r["power"]))
+        win = rows[0] if rows else None
+        winner_is_fallback = True
+    if win is None:
+        OUT.write_text(json.dumps({"scaled_provisional": True, "real_anchors": anchors,
+            "provisional_winner": None, "note": "no grid rows"}, indent=2))
+        PROGRESS.write_text("DONE: no winner; anchors written\n")
+        print("no winner; anchors written")
+        return
 
     # Holdout indicative detector demo on test-split idiosyncratic blow-ups
     universe = {a: {p: PrimitiveStats(anchors[a][p]["median"], anchors[a][p]["mad"], 9999)
@@ -227,7 +253,7 @@ def main():
             if not pre:
                 continue
             self_stats = {a: {p: PrimitiveStats(_median([b[p] for b in pre]),
-                                                _mad([b[p] for b in pre]) or 1e-6, len(pre))
+                                                _scale([b[p] for b in pre]), len(pre))
                               for p in PRIMITIVES[a]} for a in AXES}
             baseline = BaselineStats(self_stats, universe)
             first_liq = next((t.time for t in sorted(traj.trades, key=lambda x: x.time) if t.is_liquidation), None)
@@ -251,6 +277,7 @@ def main():
         "tuning_masters_fetched": n_fetch, "tuning_masters_included": n_included,
         "real_anchors": anchors,
         "provisional_winner": win,
+        "winner_is_fallback": winner_is_fallback,
         "typeI_target_relaxed": cal["typeI_target_relaxed"],
         "holdout_n": len(holdout), "holdout_alerted_early": len(alerted),
         "holdout_median_lead_hours": (_median(leads) if leads else None),
