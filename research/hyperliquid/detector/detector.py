@@ -6,8 +6,10 @@ run_detector wires together:
 
 and returns a list of AlertRecord — one per bucket.
 
-Equity-None handling: if a bucket has no equity snapshot (equity_end is None),
-we carry the last seen equity value forward; running_peak does not change.
+Equity-None handling: a bucket with no equity snapshot (equity_end is None,
+which only happens before the first snapshot) cannot be confirmed healthy, so
+is_early=False and running_peak is left unchanged — we never claim "early" on
+missing data.
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -84,11 +86,13 @@ def run_detector(
         p_by_axis = {a: sprt.update(a, obs[a]) for a in AXES}
         stepres = comp.step(p_by_axis)
 
-        # None-equity: carry last seen equity, do NOT update running_peak
-        eq = b.equity_end if b.equity_end is not None else running_peak
-        running_peak = max(running_peak, eq)
-
-        early = is_early(eq, running_peak, b.end_ms, first_liq_ms, cfg.guard_x)
+        # None-equity (before the first snapshot): no data, so we cannot claim the
+        # account is healthy — is_early=False and running_peak is left unchanged.
+        if b.equity_end is not None:
+            running_peak = max(running_peak, b.equity_end)
+            early = is_early(b.equity_end, running_peak, b.end_ms, first_liq_ms, cfg.guard_x)
+        else:
+            early = False
 
         records.append(AlertRecord(
             bucket_end_ms=b.end_ms,

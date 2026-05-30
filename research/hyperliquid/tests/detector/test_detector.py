@@ -112,15 +112,17 @@ def test_alert_after_first_liq_is_not_early():
     )
 
 
-def test_none_equity_handled_gracefully():
-    """Buckets with equity_end=None should not crash; running_peak should not regress."""
-    # One trade, equity only at t=0 — later buckets have no equity snapshot
+def test_none_equity_buckets_are_not_early():
+    """Buckets before the first equity snapshot (equity_end=None) must not claim 'early'."""
+    # equity only appears at t=2.5H -> buckets 0 and 1 have equity_end=None
     trades = [mk_trade(H // 2, coin="BTC", direction="Open Long", px=100, sz=1)]
-    eqpts = [(0, 100.0)]  # equity only at start
+    eqpts = [(int(2.5 * H), 100.0)]
     traj = mk_traj(trades=trades, equity=mk_eq(eqpts))
     cfg = _leverage_cfg()
 
     recs = run_detector(traj, _baseline(), cfg,
                         origin_ms=0, end_ms=5 * H,
                         coin_sigma={"BTC": 1.0}, pooled_sigma=1.0)
-    assert len(recs) == 5  # no crash, 5 records returned
+    assert len(recs) == 5  # no crash
+    assert recs[0].is_early is False  # None equity -> not early
+    assert recs[1].is_early is False
