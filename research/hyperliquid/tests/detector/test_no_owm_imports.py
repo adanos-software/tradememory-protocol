@@ -13,7 +13,7 @@ def _imported_modules(path):
 
 def test_detector_never_imports_owm():
     offenders = []
-    for py in DET.glob("*.py"):
+    for py in DET.rglob("*.py"):
         for mod in _imported_modules(py):
             if mod.startswith("tradememory.owm"):
                 offenders.append((py.name, mod))
@@ -22,7 +22,7 @@ def test_detector_never_imports_owm():
 def test_detector_only_allows_whitelisted_tradememory():
     # the only tradememory import allowed is the ssrt engine
     bad = []
-    for py in DET.glob("*.py"):
+    for py in DET.rglob("*.py"):
         for mod in _imported_modules(py):
             if mod.startswith("tradememory.") and not mod.startswith("tradememory.ssrt"):
                 bad.append((py.name, mod))
