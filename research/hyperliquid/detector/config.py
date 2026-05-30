@@ -37,6 +37,7 @@ class DetectorConfig:
     burn_in: int = 20
     alpha: float = 0.01            # per-axis, pre-reg #12
     guard_x: float = 0.70          # pre-reg #14
+    mask_axes: frozenset = frozenset()  # axes whose p-value is pinned at 1.0
 
     def __post_init__(self):
         # frozen dataclass: validate at construction (no later mutation point to catch errors)
@@ -48,6 +49,9 @@ class DetectorConfig:
             raise ValueError(f"tau keys must equal AXES {AXES}, got {sorted(self.tau)}")
         if set(self.weights) != set(AXES):
             raise ValueError(f"weights keys must equal AXES {AXES}, got {sorted(self.weights)}")
+        if not self.mask_axes <= set(AXES):
+            invalid = self.mask_axes - set(AXES)
+            raise ValueError(f"mask_axes contains invalid axes {invalid}; must be subset of {AXES}")
 
     @property
     def holm_gate(self) -> float:

@@ -27,6 +27,7 @@ class AxisSPRT:
     """
 
     def __init__(self, cfg) -> None:
+        self._cfg = cfg
         self._sprt: dict[str, MixtureSPRT] = {
             axis: MixtureSPRT(
                 alpha=cfg.alpha,
@@ -52,5 +53,9 @@ class AxisSPRT:
         -------
         float
             Always-valid p-value in (0, 1].  Lower = stronger evidence of drift.
+            If axis is in cfg.mask_axes, returns 1.0 immediately without feeding
+            the observation to the underlying MixtureSPRT engine.
         """
+        if axis in self._cfg.mask_axes:
+            return 1.0
         return self._sprt[axis].update(signed_obs).p_value

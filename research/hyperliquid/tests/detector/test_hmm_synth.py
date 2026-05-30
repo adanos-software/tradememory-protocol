@@ -258,3 +258,70 @@ def test_mvn_sample_reproduces_covariance():
         xs1.append(x[1])
     corr = statistics.correlation(xs0, xs1)
     assert corr == pytest.approx(0.8, abs=0.03)
+
+
+# ---------------------------------------------------------------------------
+# drift_axes: axis-selective drift (Task 16 additive feature)
+# ---------------------------------------------------------------------------
+
+def test_drift_axes_none_is_backward_compatible():
+    """drift_axes=None (default) drifts all axes — original behavior unchanged."""
+    spec = SynthSpec(
+        anchors=_anchors(), cov=_identity_cov(), delta=2.0,
+        theta_onset=1.0, theta_persist=1.0, length=400, seed=200,
+    )
+    stream, onset = generate_stream(spec)
+    assert onset == 0
+    # All axes should show drift: leverage UP (exposure), stop_attach_rate DOWN (discipline)
+    assert statistics.fmean([b["leverage"] for b in stream]) > 1.0        # exposure up
+    assert statistics.fmean([b["stop_attach_rate"] for b in stream]) < -1.0  # discipline down
+
+
+def test_drift_axes_discipline_only_shifts_stop_attach_rate_not_leverage():
+    """drift_axes={"discipline"} shifts discipline primitives but not exposure."""
+    spec = SynthSpec(
+        anchors=_anchors(), cov=_identity_cov(), delta=2.0,
+        theta_onset=1.0, theta_persist=1.0, length=600, seed=201,
+        drift_axes=frozenset({"discipline"}),
+    )
+    stream, onset = generate_stream(spec)
+    assert onset == 0
+    # Discipline drifts DOWN: stop_attach_rate should be clearly below 0
+    sar_mean = statistics.fmean([b["stop_attach_rate"] for b in stream])
+    assert sar_mean < -1.0, f"stop_attach_rate should drift down, got mean={sar_mean:.3f}"
+    # Exposure NOT drifted: leverage should be near its Normal mean (0.0)
+    lev_mean = statistics.fmean([b["leverage"] for b in stream])
+    assert abs(lev_mean) < 0.5, f"leverage should stay near 0 (not drifted), got mean={lev_mean:.3f}"
+
+
+def test_drift_axes_exposure_tilt_only_leaves_discipline_near_normal():
+    """drift_axes={"exposure","tilt"} does NOT shift discipline primitives."""
+    spec = SynthSpec(
+        anchors=_anchors(), cov=_identity_cov(), delta=2.0,
+        theta_onset=1.0, theta_persist=1.0, length=600, seed=202,
+        drift_axes=frozenset({"exposure", "tilt"}),
+    )
+    stream, onset = generate_stream(spec)
+    assert onset == 0
+    # Exposure UP and tilt UP
+    lev_mean = statistics.fmean([b["leverage"] for b in stream])
+    top_mean = statistics.fmean([b["topup_count"] for b in stream])
+    assert lev_mean > 1.0, f"leverage (exposure) should drift up, got {lev_mean:.3f}"
+    assert top_mean > 1.0, f"topup_count (tilt) should drift up, got {top_mean:.3f}"
+    # Discipline near Normal
+    sar_mean = statistics.fmean([b["stop_attach_rate"] for b in stream])
+    assert abs(sar_mean) < 0.5, f"stop_attach_rate should be near 0 (not drifted), got {sar_mean:.3f}"
+
+
+def test_drift_axes_empty_frozenset_yields_no_drift():
+    """drift_axes=frozenset() means no primitive drifts — all stay near Normal mean."""
+    spec = SynthSpec(
+        anchors=_anchors(), cov=_identity_cov(), delta=3.0,
+        theta_onset=1.0, theta_persist=1.0, length=600, seed=203,
+        drift_axes=frozenset(),
+    )
+    stream, _ = generate_stream(spec)
+    # All primitives stay near 0 (their Normal median)
+    for prim in ["leverage", "stop_attach_rate", "topup_count"]:
+        m = statistics.fmean([b[prim] for b in stream])
+        assert abs(m) < 0.5, f"{prim} should be near 0 with no drift_axes, got {m:.3f}"

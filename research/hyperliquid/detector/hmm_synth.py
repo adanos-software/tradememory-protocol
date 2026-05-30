@@ -82,6 +82,11 @@ class SynthSpec:
         Number of buckets to emit.
     seed : int
         Seed for the local random.Random — determinism, no global rng.
+    drift_axes : frozenset | None
+        When None (default), drifting shifts ALL axes (backward-compatible).
+        When a frozenset of axis names, only primitives whose axis is in this
+        set are shifted in the Drifting state; others remain at their Normal
+        mean.  Enables axis-selective drift for ablation studies.
     """
 
     anchors: dict
@@ -91,6 +96,7 @@ class SynthSpec:
     theta_persist: float
     length: int
     seed: int
+    drift_axes: "frozenset | None" = None
 
 
 # ---------------------------------------------------------------------------
@@ -214,6 +220,8 @@ def _mean_vector(spec: SynthSpec, drifting: bool) -> list[float]:
 
     Normal:    mean_i = median_i
     Drifting:  mean_i = median_i + delta * mad_i * BAD_DIR[axis_of(i)]
+               (only for primitives whose axis is in spec.drift_axes, or for
+               ALL axes when drift_axes is None — backward-compatible default)
     """
     mean = []
     for p in PRIM_ORDER:
@@ -221,7 +229,9 @@ def _mean_vector(spec: SynthSpec, drifting: bool) -> list[float]:
         a = spec.anchors[axis][p]
         m = a["median"]
         if drifting:
-            m += spec.delta * a["mad"] * BAD_DIR[axis]
+            # drift_axes=None means all axes drift (backward-compatible)
+            if spec.drift_axes is None or axis in spec.drift_axes:
+                m += spec.delta * a["mad"] * BAD_DIR[axis]
         mean.append(m)
     return mean
 
