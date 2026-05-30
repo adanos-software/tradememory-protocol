@@ -103,3 +103,64 @@ def run_detector(
         ))
 
     return records
+
+
+def run_detector_on_stream(
+    stream,
+    baseline,
+    cfg,
+    first_liq_idx: int | None = None,
+) -> list[AlertRecord]:
+    """Run the detector pipeline on a precomputed stream of 9-primitive dicts.
+
+    This is the synthetic-calibration entry point: the stream already carries
+    the per-bucket primitive values (e.g. from hmm_synth.generate_stream), so we
+    skip bucketize / PrimitiveState entirely and feed each bucket straight into
+    axis_observations -> AxisSPRT -> Composite.  The bucket *index* is the time
+    coordinate (used as AlertRecord.bucket_end_ms).
+
+    Guard band: synthetic streams model no equity curve, so there is no
+    equity-health check.  Lead-time in the power suite is measured back to the
+    HMM onset, not to a liquidation.  We therefore treat every bucket as being
+    in the early-warning zone (is_early=True) unless a liquidation index is
+    supplied, in which case is_early is True strictly before first_liq_idx and
+    False at/after it.  This mirrors guard_band.is_early's pre-first-liquidation
+    clause without the (absent) equity term.
+
+    Parameters
+    ----------
+    stream : list[dict[str, float]]
+        Per-bucket dicts of the 9 primitive values in natural units.
+    baseline : BaselineStats
+        Frozen self+universe stats for shrinkage z-scoring; must be aligned with
+        the stream's anchors for the z-scores to be meaningful.
+    cfg : DetectorConfig
+        Detector hyper-parameters.
+    first_liq_idx : int | None
+        Bucket index of a modeled liquidation, or None (no liquidation modeled).
+
+    Returns
+    -------
+    list[AlertRecord]
+        One record per bucket; bucket_end_ms == bucket index.
+    """
+    sprt = AxisSPRT(cfg)
+    comp = Composite(cfg)
+
+    records: list[AlertRecord] = []
+    for idx, prim in enumerate(stream):
+        obs = axis_observations(prim, baseline, cfg)
+        p_by_axis = {a: sprt.update(a, obs[a]) for a in AXES}
+        stepres = comp.step(p_by_axis)
+
+        early = first_liq_idx is None or idx < first_liq_idx
+
+        records.append(AlertRecord(
+            bucket_end_ms=idx,
+            fired=stepres.fired,
+            alert_raised=stepres.alert_raised,
+            is_early=early,
+            carrying_axis=stepres.carrying_axis,
+        ))
+
+    return records

@@ -6,8 +6,10 @@ Verifies that the full pipeline (bucketize -> PrimitiveState -> axis_observation
 from research.hyperliquid.detector.config import (
     PrimitiveStats, BaselineStats, DetectorConfig, PRIMITIVES, AXES,
 )
-from research.hyperliquid.detector.detector import run_detector
-from research.hyperliquid.tests.detector.helpers import mk_trade, mk_eq, mk_traj
+from research.hyperliquid.detector.detector import run_detector, run_detector_on_stream
+from research.hyperliquid.tests.detector.helpers import (
+    mk_trade, mk_eq, mk_traj, anchors_flat, identity_cov,
+)
 
 H = 3600 * 1000  # 1 hour in ms
 
@@ -126,3 +128,95 @@ def test_none_equity_buckets_are_not_early():
     assert len(recs) == 5  # no crash
     assert recs[0].is_early is False  # None equity -> not early
     assert recs[1].is_early is False
+
+
+# ---------------------------------------------------------------------------
+# run_detector_on_stream: synthetic-stream adapter (Task 13)
+# ---------------------------------------------------------------------------
+def _stream_baseline():
+    """Baseline matching the synthetic anchors (median=0, mad=1 => std=1)."""
+    s = {a: {p: PrimitiveStats(0.0, 1.0, 10_000) for p in PRIMITIVES[a]} for a in AXES}
+    u = {a: {p: PrimitiveStats(0.0, 1.0, 9_999) for p in PRIMITIVES[a]} for a in AXES}
+    return BaselineStats(s, u)
+
+
+def _stream_cfg(M=3, burn_in=10):
+    return DetectorConfig(
+        bucket_ms=1, M=M,
+        tau={a: 0.3 for a in AXES},
+        weights={a: {p: 1 / 3 for p in PRIMITIVES[a]} for a in AXES},
+        kappa=0, burn_in=burn_in,
+    )
+
+
+def test_run_on_stream_alerts_on_drift_after_onset():
+    from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
+    s = {a: {p: PrimitiveStats(0.0, 1.0, 10_000) for p in PRIMITIVES[a]} for a in AXES}
+    u = {a: {p: PrimitiveStats(0.0, 1.0, 9999) for p in PRIMITIVES[a]} for a in AXES}
+    base = BaselineStats(s, u)
+    spec = SynthSpec(anchors=anchors_flat(), cov=identity_cov(),
+                     delta=2.0, theta_onset=1.0, theta_persist=1.0, length=200, seed=3)
+    stream, onset = generate_stream(spec)
+    cfg = DetectorConfig(bucket_ms=1, M=3, tau={a: 0.3 for a in AXES},
+                         weights={a: {p: 1 / 3 for p in PRIMITIVES[a]} for a in AXES},
+                         kappa=0, burn_in=10)
+    recs = run_detector_on_stream(stream, base, cfg)
+    assert any(r.alert_raised for r in recs)
+
+
+def test_run_on_stream_one_record_per_bucket():
+    from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
+    spec = SynthSpec(anchors=anchors_flat(), cov=identity_cov(),
+                     delta=2.0, theta_onset=1.0, theta_persist=1.0, length=120, seed=4)
+    stream, _ = generate_stream(spec)
+    recs = run_detector_on_stream(stream, _stream_baseline(), _stream_cfg())
+    assert len(recs) == 120
+    # bucket index is used as the timestamp surrogate
+    assert [r.bucket_end_ms for r in recs] == list(range(120))
+
+
+def test_run_on_stream_pure_normal_no_alert():
+    """A pure-Normal stream (no drift) must not raise an alert."""
+    from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
+    spec = SynthSpec(anchors=anchors_flat(), cov=identity_cov(),
+                     delta=2.0, theta_onset=0.0, theta_persist=0.9, length=300, seed=5)
+    stream, onset = generate_stream(spec)
+    assert onset is None
+    recs = run_detector_on_stream(stream, _stream_baseline(), _stream_cfg())
+    assert not any(r.alert_raised for r in recs)
+
+
+def test_run_on_stream_is_early_true_when_no_liq_idx():
+    """With first_liq_idx=None, every bucket is in the early-warning band."""
+    from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
+    spec = SynthSpec(anchors=anchors_flat(), cov=identity_cov(),
+                     delta=2.0, theta_onset=1.0, theta_persist=1.0, length=80, seed=6)
+    stream, _ = generate_stream(spec)
+    recs = run_detector_on_stream(stream, _stream_baseline(), _stream_cfg(),
+                                  first_liq_idx=None)
+    assert all(r.is_early for r in recs)
+
+
+def test_run_on_stream_is_early_respects_first_liq_idx():
+    """is_early is True strictly before first_liq_idx, False at/after it."""
+    from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
+    spec = SynthSpec(anchors=anchors_flat(), cov=identity_cov(),
+                     delta=2.0, theta_onset=1.0, theta_persist=1.0, length=80, seed=7)
+    stream, _ = generate_stream(spec)
+    recs = run_detector_on_stream(stream, _stream_baseline(), _stream_cfg(),
+                                  first_liq_idx=50)
+    assert all(r.is_early for r in recs[:50])
+    assert all(not r.is_early for r in recs[50:])
+
+
+def test_run_on_stream_alert_index_precedes_onset_window():
+    """Drift onset at 0 with delta=2 -> alert fires within the stream (lead-time ok)."""
+    from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
+    spec = SynthSpec(anchors=anchors_flat(), cov=identity_cov(),
+                     delta=2.0, theta_onset=1.0, theta_persist=1.0, length=200, seed=8)
+    stream, onset = generate_stream(spec)
+    recs = run_detector_on_stream(stream, _stream_baseline(), _stream_cfg())
+    fired = [r for r in recs if r.alert_raised]
+    assert fired
+    # an early alert should be flagged is_early when no liquidation is modeled
+    assert fired[0].is_early
