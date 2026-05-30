@@ -28,6 +28,10 @@ def bucketize(traj, origin_ms, end_ms, bucket_ms):
         if origin_ms <= ev.time < end_ms:
             buckets[idx(ev.time)].ledger.append(ev)
 
+    # Carry-forward equity: bucket.equity_end = latest point with time <= end_ms.
+    # Pre-origin equity points (time < origin_ms) are INTENTIONALLY carried into bucket 0 as
+    # the entry-time account-value reference (the master's equity when the window opens), so
+    # the guard band's running_peak reflects the genuine pre-window peak.
     eq = sorted(traj.equity, key=lambda p: p.time)
     j, last = 0, None
     for b in buckets:

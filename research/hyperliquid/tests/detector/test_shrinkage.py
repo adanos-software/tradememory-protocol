@@ -21,3 +21,10 @@ def test_sigma_floored_positive():
     u = PrimitiveStats(mean=0.0, std=0.0, n=5)
     _, sigma = blend(s, u, kappa=14)
     assert sigma > 0
+
+
+def test_midpoint_shrinkage_at_n_equals_kappa():
+    s = PrimitiveStats(mean=4.0, std=2.0, n=14)
+    u = PrimitiveStats(mean=0.0, std=2.0, n=999)
+    mu, _ = blend(s, u, kappa=14)   # w = 14/(14+14) = 0.5
+    assert abs(mu - 2.0) < 1e-9     # 0.5*4 + 0.5*0
