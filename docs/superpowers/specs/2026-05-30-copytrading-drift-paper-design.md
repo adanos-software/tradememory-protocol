@@ -54,7 +54,7 @@ The prior "failure" becomes the load-bearing argument. Nothing is wasted (§9).
 **Pre-registration is real, not cosmetic (§7.2): the detector, its α, the baselines, the cohort-defining rules, and the metric targets are frozen in a timestamped git commit BEFORE the held-out test set is touched.**
 
 ### Claim A — Lead-time over non-trivial EARLY baselines (HEADLINE)
-On held-out blow-up masters, the 3-axis detector raises its first guard-banded sustained alert a median of **Δ trades / hours EARLIER than the best of three non-trivial early baselines**:
+On held-out blow-up masters, the 3-axis detector raises its first guard-banded sustained alert a median of **Δ wall-clock hours EARLIER than the best of three non-trivial early baselines** (wall-clock hours = primary unit; trade-count secondary):
 - **B1 leverage-percentile tripwire** — fires when leverage crosses the trader's own historical p90 (self-referential, causal).
 - **B2 drawdown-velocity** — fires on the *first derivative* of equity drawdown (acceleration), NOT the terminal level.
 - **B3 heuristic** — "leverage up AND adding into a losing position," no changepoint math.
@@ -88,7 +88,7 @@ Volatility normalization (size/equity or size/ATR) is mandatory — else we can'
 ### 5.3 Guard band against label leakage (CRITICAL)
 Exposure & Tilt are mechanically coupled to the equity curve, so an "early" alert could merely be reading a contemporaneous shadow of the crater used as the label. Firewall:
 1. **Guard band**: a counted alert MUST fire while account value ≥ **X% of running peak** AND strictly **before the first liquidation fill of the terminal cascade**. Alerts inside the cascade window don't count as "early."
-2. **Equity-decoupled ablation**: a **discipline-only** detector (stop-order presence + holding-time, no equity-derived feature) must show non-trivial lead-time survives — proving the signal isn't just the equity proxy.
+2. **Equity-decoupled ablation**: a **discipline-only** detector (stop-order presence + holding-time, no equity-derived feature) must retain a pre-registered fraction of the full detector's lead-time (≥ 50%, exact bar fixed in the pre-reg commit) with event-clustered CI excluding 0 — proving the signal isn't just the equity proxy.
 3. Margin top-ups **inside** the terminal cascade are excluded from "early" Tilt signal.
 
 ### 5.4 Ground truth (forward-only, non-circular)
@@ -99,7 +99,7 @@ Auditable alert records (axis, statistic, evidence window, action) hashed into t
 
 ## 6. Data & cohort design (frozen-at-T₀ — kills selection bias)
 
-**Source**: Hyperliquid public info API (`api.hyperliquid.xyz/info`), no auth. Verified endpoints (spike 2026-05-30): `userFillsByTime` (fills incl. `liquidation` key; 10k-most-recent cap), `portfolio` (equity), `historicalOrders` (stop/trigger), `userNonFundingLedgerUpdates` (margin deposits).
+**Source**: Hyperliquid public info API (`api.hyperliquid.xyz/info`), no auth. Verified endpoints (spike 2026-05-30, archived `research/hyperliquid/SPIKE-2026-05-30.md`): `userFillsByTime` (fills incl. `liquidation` key; 10k-most-recent cap), `portfolio` (equity), `historicalOrders` (stop/trigger), `userNonFundingLedgerUpdates` (margin deposits).
 
 **Frozen universe (the anti-hindsight core):**
 1. Pick a fixed historical date **T₀**. Snapshot the universe = all addresses on the Hyperliquid leaderboard / above a pre-set activity floor **at T₀**. Freeze this list.
@@ -109,7 +109,7 @@ Auditable alert records (axis, statistic, evidence window, action) hashed into t
 5. **Famous/notorious names (James Wynn `0xBC47…`, the March-2025 50x ETH whale, CoinGlass largest-liquidated) are NOT in the statistical cohort** (conditioning on notoriety = sampling on the dependent variable). They appear ONLY as a clearly-labelled **case-study appendix**, excluded from all AUC/lead-time statistics, pseudonymized facts only (§11 ethics).
 6. **Volatility-null windows**: market-wide high-volatility periods used to prove the detector does NOT fire on stable traders merely because the market moved.
 
-**Disclosed caveats**: 10k-fill cap couples history length to trade frequency (HFT masters → short baseline) → handled by the §6.4 minimum-baseline inclusion rule, with exclusions reported. On-chain crypto perps only (generalization scoped in §10).
+**Disclosed caveats**: 10k-fill cap couples history length to trade frequency (HFT masters → short baseline) → handled by the minimum-baseline inclusion rule (§6 item 4), whose exclusions are reported as a named selection-bias line (this rule itself biases the cohort toward lower-frequency masters — disclosed, not silent). On-chain crypto perps only (generalization scoped in §10).
 
 ## 7. Experimental design & statistics
 
@@ -117,7 +117,7 @@ Auditable alert records (axis, statistic, evidence window, action) hashed into t
 **Tuning set** (set features/M/threshold) → **validation set** (sanity) → **LOCKED test set** (reported as primary). Detector + α + baselines + metric targets frozen in a **timestamped git commit before the locked test is read**. Tuning/validation results reported as exploratory only.
 
 ### 7.2 What we measure
-- **A (lead-time)**: per blow-up master, causal run; lead-time = T(blow-up) − T(first guard-banded sustained alert); advantage over best(B1,B2,B3); aggregate with event-clustered CI.
+- **A (lead-time)**: per blow-up master, causal run; lead-time = T(blow-up) − T(first guard-banded sustained alert); advantage over best(B1,B2,B3); aggregate with event-clustered CI. **All comparators (detector + B1/B2/B3) run on identical input windows under the identical guard band — equal causal footing; primary unit = wall-clock hours.**
 - **B (discrimination)**: AUC + volatility-null FPR + PPV/precision at operating point + cost curve, all event-clustered.
 - **C (impact)**: dimensionless sensitivity surface (§4C).
 - **Mechanism appendix (synthetic)**: controlled-drift demonstration of detector mechanics — appendix only.
@@ -171,9 +171,9 @@ Blow-ups **cluster in time** (one BTC/ETH crash liquidates many masters the same
 - Added **ethics (pseudonymization, COI) + reproducibility (archived raw responses)**; scoped empirical claims to crypto perps.
 
 ## 14. Build phases (after spec approval → writing-plans)
-1. **Data pipeline** — Hyperliquid fetch/normalize + frozen-universe enumeration at T₀ + raw-response archive. (New code in `scripts/research/` or `research/`; **does not touch `src/tradememory/mcp_server.py`**.)
+1. **Data pipeline** — Hyperliquid fetch/normalize + frozen-universe enumeration at T₀ + raw-response archive. **Exit gate: archive real spike responses proving pre-event baseline length is adequate for the chosen T₀, and report the count of candidates excluded by the 10k-fill cap as a named selection-bias line.** (New code in `scripts/research/` or `research/`; **does not touch `src/tradememory/mcp_server.py`**.)
 2. **Detector** — 3-axis vol-normalized features + per-axis sequential test + Holm-corrected sustained composite + guard band + audit-emit; fresh composite MC calibration on synthetic.
-3. **Pre-registration commit** — freeze detector/α/baselines/targets/cohort rules; timestamp.
+3. **Pre-registration commit (HARD GATE)** — freeze detector/α/baselines/all numeric targets (AUC & PPV floors, drawdown %/recovery horizon for T, guard-band X%, composite M, T₀, activity floor, baseline-length min, ablation pass bar)/cohort rules in one commit; **publish its hash in the paper; phase 4 references it; the locked test is read ONLY after this commit exists.**
 4. **Experiments** — A/B/C on locked test; decoupled ablation; event-clustered stats; synthetic mechanism appendix.
 5. **Writing** — assemble per §8; reproducibility appendix.
 6. **Pre-submission** — LaTeX/figures/refs; arXiv metadata; CC-BY; submit for **Monday listing** (Sun ~13:55 ET = Mon ~01:55 Taiwan) per `behavioral-drift-paper-arxiv-2026-05.md`.

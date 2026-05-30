@@ -64,6 +64,7 @@ TradeMemory Protocol 是 Mnemox AI 的核心產品。MT5/forex 交易記憶層�
 - Use UTC for all timestamps
 
 ## Recent Changes (latest 10)
+- [2026-05-30] **Copy-trading blow-up paper pivot** — reframed the self-monitoring CUSUM paper into a flagship: detect master-trader behavioral drift on real Hyperliquid on-chain data BEFORE blow-ups harm followers. Hyperliquid API feasibility = GO (spike archived `research/hyperliquid/SPIKE-2026-05-30.md`: `liquidation` key on fills, equity crater, trigger orders, margin-topup ledger all retrievable). Design spec `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md` (rev2, passed 2 adversarial reviews → APPROVED-WITH-MINORS). Headline=lead-time over non-trivial early baselines; frozen-at-T0 cohort (kills survivorship bias); guard-band vs label leakage; event-clustered stats. Recycles MaxDDStop/BOCPD/DQS as motivation+negatives. Branch `copytrading-drift-demo`.
 - [2026-04-10] **SSRT Phase 2** — shift_null (preserve evidence on regime change) + tau sweep (0.3/0.5/1.0). 22,500 MC runs. Key findings: shift_null WORSE than reset (50.2% vs 57.0% det rate on regime_specific); tau=0.3 is best (+5pp power, Type I=0.008); mSPRT_t03 = best statistically-valid method (81.4% power, only method with Type I < 0.05). Regime-aware approaches both fail — fixed null dominates.
 - [2026-04-10] **SSRT Phase 1** — mSPRT engine (Johari et al.) + regime-aware null + 15k Monte Carlo experiments. mSPRT Type I=0.012 (only method < 0.05). Regime-aware null worse than fixed null (evidence loss on reset). 14 new tests, 12 files.
 - [2026-04-10] **arXiv paper major revision** — 6300 words, 17 refs. MaxDDStop (equity DD threshold) outperforms CUSUM 93.5%. Reframed CUSUM as diagnostic tool. Added k=0 justification, robustness check (without BTCUSDT 1h: vs SimpleWR p=0.179), strategy dependence caveat. h sensitivity pending.
@@ -81,6 +82,7 @@ TradeMemory Protocol 是 Mnemox AI 的核心產品。MT5/forex 交易記憶層�
   - Phase E: 4 ADR + OWM 技術文章草稿
 
 ## Current Status
+- **Copy-trading drift paper (2026-05-30)**: design spec APPROVED-WITH-MINORS (2 adversarial review rounds, all 4 blockers closed), Hyperliquid data GO. Branch `copytrading-drift-demo`. Next: Sean reviews spec → writing-plans → build data pipeline (frozen-at-T0 universe + 3-axis detector). Spec `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md`.
 - **v0.5.1** — PyPI + GitHub Release 已發（2026-03-27）
 - **1374 tests passing** (1253 + 60 strategy validator + 11 legitimacy + 12 property-based + 5 integration + 10 DQS + 8 changepoint + 10 simulation + 14 SSRT - 9 removed), 1 failed (anthropic SDK), 1 skipped
 - **SSRT Module**: `src/tradememory/ssrt/` — mSPRT engine (tau=0.3 default), shift_null, regime-aware null, simulator, baselines. Phase 1+2 results in `validation/ssrt/`. Best method: mSPRT_t03 (81.4% power, Type I=0.008). Regime-aware approaches both fail.
