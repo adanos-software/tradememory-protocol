@@ -82,7 +82,7 @@ TradeMemory Protocol 是 Mnemox AI 的核心產品。MT5/forex 交易記憶層�
   - Phase E: 4 ADR + OWM 技術文章草稿
 
 ## Current Status
-- **Copy-trading drift paper (2026-05-30)**: design spec APPROVED-WITH-MINORS (2 adversarial review rounds, all 4 blockers closed), Hyperliquid data GO. Branch `copytrading-drift-demo`. Next: Sean reviews spec → writing-plans → build data pipeline (frozen-at-T0 universe + 3-axis detector). Spec `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md`.
+- **Copy-trading drift paper (2026-05-30)**: spec + Plan 1 (data pipeline) both APPROVED via adversarial review (2 rounds each); Plan 1 critical units (forward-only blowup labeler + frozen-T0 cohort) empirically verified 23/23 green. Hyperliquid data GO. Branch `copytrading-drift-demo`. Next: execute Plan 1 Tasks 1-8 (code) → Task 9 real cohort run = go/no-go → Plan 2 (detector) → Plan 3 (experiments+paper). Spec `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md`; Plan 1 `docs/superpowers/plans/2026-05-30-hyperliquid-data-pipeline.md`.
 - **v0.5.1** — PyPI + GitHub Release 已發（2026-03-27）
 - **1374 tests passing** (1253 + 60 strategy validator + 11 legitimacy + 12 property-based + 5 integration + 10 DQS + 8 changepoint + 10 simulation + 14 SSRT - 9 removed), 1 failed (anthropic SDK), 1 skipped
 - **SSRT Module**: `src/tradememory/ssrt/` — mSPRT engine (tau=0.3 default), shift_null, regime-aware null, simulator, baselines. Phase 1+2 results in `validation/ssrt/`. Best method: mSPRT_t03 (81.4% power, Type I=0.008). Regime-aware approaches both fail.
