@@ -19,14 +19,13 @@ pick_winner(rows)
 run_calibration(anchors, cov, seed, n_streams, out_path, ...)
     -> artifact dict  (also written as JSON to out_path)
 
-Import-isolation: only stdlib + math + random + research.hyperliquid.*.
+Import-isolation: only stdlib + hashlib + research.hyperliquid.*.
 No numpy, no scipy, no tradememory.owm.*.
 """
 from __future__ import annotations
 
+import hashlib
 import json
-import math
-import random
 
 __all__ = [
     "measure",
@@ -38,7 +37,6 @@ __all__ = [
 
 from research.hyperliquid.detector.config import (
     AXES,
-    BAD_DIR,
     PRIMITIVES,
     BaselineStats,
     DetectorConfig,
@@ -52,6 +50,22 @@ from research.hyperliquid.detector.detector import run_detector_on_stream
 # ---------------------------------------------------------------------------
 _LARGE_N = 100_000        # sentinel n for "effectively infinite" baseline stats
 _SIGMA_FLOOR = 1e-9       # avoid division by zero in LDA / z-scoring
+_DOF = 3                  # distinct tuned knobs: tau (1), weights choice (1), kappa (1)
+
+
+# ---------------------------------------------------------------------------
+# deterministic per-cell LDA seed
+# ---------------------------------------------------------------------------
+
+def _stable_lda_seed(seed: int, bucket_ms: int, M: int, tau: float,
+                     weights_choice: str, kappa: float) -> int:
+    """Return a stable 24-bit seed for a grid cell, independent of PYTHONHASHSEED.
+
+    Uses MD5 (truncated to 24 bits) over a canonical string key so the result
+    is identical across processes regardless of hash randomisation.
+    """
+    key = f"{seed},{bucket_ms},{M},{tau},{weights_choice},{kappa}"
+    return int(hashlib.md5(key.encode()).hexdigest(), 16) & 0xFFFFFF
 
 
 # ---------------------------------------------------------------------------
@@ -170,6 +184,8 @@ def measure(
         first_idx = _first_alert_idx(records)
         if first_idx is not None:
             power_alerts += 1
+            # onset_idx is always 0 when theta_onset=1.0; the guard is kept
+            # for defensive correctness in case theta_onset is varied in future.
             lat = first_idx - (onset_idx if onset_idx is not None else 0)
             latencies.append(lat)
 
@@ -267,7 +283,11 @@ def lda_weights(
     # Normalise so sum|w| == 1
     total_abs = sum(abs(wi) for wi in w)
     if total_abs < _SIGMA_FLOOR:
-        # All-zero solution: fallback
+        # All-zero solution: fallback to equal weights.
+        # Note: when mad=0 for all samples the within-class scatter is near-zero
+        # but ridge regularisation keeps S_W non-singular, so _solve_linear
+        # succeeds (w is not None) yet returns a near-zero vector — this branch
+        # is reached, NOT the "w is None" branch above.
         w_eq = 1.0 / k
         return {p: w_eq for p in prims}
 
@@ -328,14 +348,6 @@ _DEFAULT_KAPPA     = (7, 14, 30)
 
 _MS_6H  = 6 * 3600 * 1000
 _MS_7D  = 7 * 24 * 3600 * 1000
-
-
-def _count_dof(tau, weights, kappa) -> int:
-    """Count distinct tuned knobs as a simple integer for Occam tiebreak."""
-    # tau (1 per-axis scalar treated as 1 knob),
-    # weights choice (1 knob), kappa (1 knob) = 3 base knobs.
-    # Always the same here; kept as a function for easy extension.
-    return 3
 
 
 def _build_cfg_for_row(
@@ -402,9 +414,10 @@ def grid_search(
             for tau in tau_options:
                 for weights_choice in weights_options:
                     for kappa in kappa_options:
-                        # Use a cell-specific seed for LDA to keep determinism
-                        lda_seed = (
-                            seed ^ hash((bucket_ms, M, tau, weights_choice, kappa)) & 0xFFFFFF
+                        # Stable per-cell LDA seed: deterministic across processes
+                        # regardless of PYTHONHASHSEED (MD5-based, not builtin hash).
+                        lda_seed = _stable_lda_seed(
+                            seed, bucket_ms, M, tau, weights_choice, kappa
                         )
                         cfg = _build_cfg_for_row(
                             bucket_ms=bucket_ms,
@@ -441,7 +454,10 @@ def grid_search(
                             "type_i":         res["type_i"],
                             "power":          res["power"],
                             "median_detection_latency_buckets": res["median_detection_latency_buckets"],
-                            "dof":            _count_dof(tau, weights_choice, kappa),
+                            "dof":            _DOF,
+                            # Store the per-cell lda_seed so run_calibration can
+                            # rebuild the winner with exactly the same LDA weights.
+                            "lda_seed":       lda_seed,
                         })
 
     return rows
@@ -532,6 +548,8 @@ def run_calibration(
     if winner is not None:
         realized_type_i = winner["type_i"]
         realized_power  = winner["power"]
+        # Reuse the exact lda_seed stored by grid_search so the winner's
+        # DetectorConfig has identical LDA weights to the measured grid cell.
         winner_cfg = _build_cfg_for_row(
             bucket_ms=winner["bucket_ms"],
             M=winner["M"],
@@ -541,7 +559,7 @@ def run_calibration(
             anchors=anchors,
             cov=cov,
             delta=delta_power,
-            lda_seed=seed ^ 0xABCD,
+            lda_seed=winner["lda_seed"],
         )
     else:
         realized_type_i = None

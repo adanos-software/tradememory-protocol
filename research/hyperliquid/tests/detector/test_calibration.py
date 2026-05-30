@@ -68,6 +68,9 @@ class TestMeasure:
         )
         # type_i is the ONLY thing evaluated for pure Normal (theta_onset=0)
         assert 0.0 <= res["type_i"] <= 1.0
+        # Sanity bound: a properly calibrated detector should not fire too
+        # often on pure-Normal data.
+        assert res["type_i"] < 0.3
 
     def test_measure_latency_is_nonneg_or_none(self):
         """median_detection_latency_buckets is None (no detections) or >= 0."""
@@ -207,10 +210,15 @@ class TestPickWinner:
 
 class TestLdaWeights:
     def test_fallback_on_degenerate_input(self):
-        """All-zero MAD → singular scatter → fallback to equal weights."""
+        """All-zero MAD → near-zero solution (tiny-solution branch) → fallback to equal weights.
+
+        When mad=0, ridge regularisation keeps S_W non-singular so _solve_linear
+        succeeds, but the solution vector is near-zero → the total_abs < _SIGMA_FLOOR
+        branch triggers (NOT the 'w is None' branch).
+        """
         from research.hyperliquid.detector.calibration import lda_weights
 
-        # mad=0 collapses all variance → degenerate within-class scatter
+        # mad=0 collapses all variance → near-zero within-class scatter solution
         anchors = anchors_flat(median=0.0, mad=0.0)
         cov = identity_cov()
         w = lda_weights("exposure", anchors, cov, delta=1.0, seed=1)
@@ -386,3 +394,38 @@ class TestGridSearch:
             assert ms_6h <= floor_ms <= ms_7d, (
                 f"M*bucket = {floor_ms/3600000:.1f}h violates [6h, 7d] for row {row}"
             )
+
+    def test_grid_rows_contain_lda_seed(self):
+        """Each grid row must carry the lda_seed used for that cell."""
+        from research.hyperliquid.detector.calibration import grid_search
+
+        rows = grid_search(
+            anchors=anchors_flat(),
+            cov=identity_cov(),
+            seed=3,
+            n_streams=4,
+            bucket_ms_options=(3600 * 1000,),
+            M_options=(6,),
+            tau_options=(0.3,),
+            weights_options=("equal", "lda"),
+            kappa_options=(7,),
+            delta=1.5,
+        )
+        assert len(rows) >= 1
+        for row in rows:
+            assert "lda_seed" in row, "row missing lda_seed field"
+            assert isinstance(row["lda_seed"], int)
+
+    def test_stable_lda_seed_deterministic(self):
+        """_stable_lda_seed must return the same value across two calls (PYTHONHASHSEED-independent)."""
+        from research.hyperliquid.detector.calibration import _stable_lda_seed
+
+        seed, bucket_ms, M, tau, weights_choice, kappa = 42, 3600_000, 6, 0.3, "lda", 14
+        s1 = _stable_lda_seed(seed, bucket_ms, M, tau, weights_choice, kappa)
+        s2 = _stable_lda_seed(seed, bucket_ms, M, tau, weights_choice, kappa)
+        assert s1 == s2, "lda_seed not deterministic across two calls"
+        # Different cell → different seed
+        s3 = _stable_lda_seed(seed, bucket_ms, M, tau, "equal", kappa)
+        assert s1 != s3, "different cells should produce different lda seeds"
+        # Result is a non-negative 24-bit integer
+        assert 0 <= s1 < (1 << 24)
