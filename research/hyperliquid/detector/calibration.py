@@ -72,7 +72,7 @@ def _stable_lda_seed(seed: int, bucket_ms: int, M: int, tau: float,
 # baseline builder (key wiring note from spec)
 # ---------------------------------------------------------------------------
 
-def _baseline_from_anchors(anchors: dict) -> BaselineStats:
+def baseline_from_anchors(anchors: dict) -> BaselineStats:
     """Build a BaselineStats where self == universe, both set to anchors.
 
     For each axis/primitive: mean = anchors[axis][p]["median"],
@@ -145,7 +145,7 @@ def measure(
 
     Seed per stream is (seed + i) for determinism.
     """
-    baseline = _baseline_from_anchors(anchors)
+    baseline = baseline_from_anchors(anchors)
 
     # ---- Type-I: pure-Normal streams ----
     type_i_alerts = 0

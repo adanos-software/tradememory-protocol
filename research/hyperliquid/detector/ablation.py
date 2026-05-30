@@ -23,7 +23,7 @@ import random
 from research.hyperliquid.detector.config import AXES, PRIMITIVES
 from research.hyperliquid.detector.hmm_synth import SynthSpec, generate_stream
 from research.hyperliquid.detector.detector import run_detector_on_stream
-from research.hyperliquid.detector.calibration import _baseline_from_anchors
+from research.hyperliquid.detector.calibration import baseline_from_anchors
 
 
 # ---------------------------------------------------------------------------
@@ -210,8 +210,10 @@ def ablation_sanity(
         full_power, disc_power, full_median_latency, disc_median_latency
     scenario_A also contains:
         ci_low, ci_high, median, disc_to_full_latency_ratio
+        (ci_low/ci_high are float('nan') when disc_power == 0, i.e. no
+        discipline-only alert fired — guard with math.isnan downstream).
     """
-    baseline = _baseline_from_anchors(anchors)
+    baseline = baseline_from_anchors(anchors)
     disc_cfg = discipline_only_cfg(cfg)
 
     scenarios = {
