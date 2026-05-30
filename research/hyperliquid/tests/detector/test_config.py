@@ -28,3 +28,11 @@ def test_config_rejects_bad_M_and_axis_keys():
         DetectorConfig(bucket_ms=1, M=0, tau=good_tau, weights=good_w, kappa=14)
     with pytest.raises(ValueError):
         DetectorConfig(bucket_ms=1, M=3, tau={"exposure":0.3}, weights=good_w, kappa=14)
+
+
+def test_config_kappa_zero_allowed_negative_rejected():
+    good_tau = {"exposure": 0.3, "discipline": 0.3, "tilt": 0.3}
+    good_w = {a: {p: 1/3 for p in PRIMITIVES[a]} for a in AXES}
+    DetectorConfig(bucket_ms=1, M=1, tau=good_tau, weights=good_w, kappa=0)  # legal: pure-self baseline
+    with pytest.raises(ValueError):
+        DetectorConfig(bucket_ms=1, M=1, tau=good_tau, weights=good_w, kappa=-1)

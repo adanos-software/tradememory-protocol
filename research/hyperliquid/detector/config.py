@@ -42,8 +42,8 @@ class DetectorConfig:
         # frozen dataclass: validate at construction (no later mutation point to catch errors)
         if self.M < 1:
             raise ValueError(f"M must be >= 1, got {self.M}")
-        if self.kappa <= 0:
-            raise ValueError(f"kappa must be > 0, got {self.kappa}")
+        if self.kappa < 0:
+            raise ValueError(f"kappa must be >= 0, got {self.kappa}")
         if set(self.tau) != set(AXES):
             raise ValueError(f"tau keys must equal AXES {AXES}, got {sorted(self.tau)}")
         if set(self.weights) != set(AXES):
