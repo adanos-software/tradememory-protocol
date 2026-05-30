@@ -92,12 +92,18 @@ def raw_orders():
     ]
 
 class FakeTransport:
-    """Injectable stand-in for the network. Records calls; returns queued responses."""
-    def __init__(self, responses):
-        self._responses = list(responses)  # list of (predicate(body)->bool, response)
+    """Injectable stand-in for the network. Records calls; returns queued responses,
+    or delegates to a side_effect callable (for stateful pagination tests).
+    NOTE: dispatch lives in __call__ on the CLASS — never monkeypatch ft.__call__ on an
+    instance (Python looks up dunders on the type, so an instance attr is ignored)."""
+    def __init__(self, responses=None, side_effect=None):
+        self._responses = list(responses or [])   # list of (predicate(body)->bool, response)
+        self._side_effect = side_effect            # callable(body)->response, takes priority
         self.calls = []
     def __call__(self, body):
         self.calls.append(body)
+        if self._side_effect is not None:
+            return self._side_effect(body)
         for pred, resp in self._responses:
             if pred(body):
                 return resp
@@ -120,10 +126,12 @@ def test_fixtures_load(raw_fills, raw_portfolio, raw_ledger, raw_orders):
     assert raw_portfolio[0][0] == "perpAllTime"
 ```
 
-- [ ] **Step 3: Create the two empty `__init__.py` files**
+- [ ] **Step 3: Create the two empty `__init__.py` files + gitignore the archive dir**
 
+Create `research/hyperliquid/__init__.py` and `research/hyperliquid/tests/__init__.py` (empty).
 Run: `python -c "import os; [open(p,'w').close() for p in ['research/hyperliquid/__init__.py','research/hyperliquid/tests/__init__.py']]"`
-(or create them via the editor)
+Then append `research/hyperliquid/_archive/` to the repo-root `.gitignore` (large raw API JSON must never be staged — the client writes there by default).
+**Import note:** run pytest from the repo root (`python -m pytest research/hyperliquid/tests/ -v`); `research/` resolves as a PEP 420 namespace package so `import research.hyperliquid` works without a `research/__init__.py`. Running pytest from inside `research/hyperliquid/` will fail with `ModuleNotFoundError: research`.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -276,18 +284,19 @@ def test_post_archives_raw_response(tmp_path, fake_transport_cls):
     assert "query_time_ms" in saved   # reproducibility per spec §11
 
 def test_fetch_user_fills_paginates_and_dedupes(tmp_path, fake_transport_cls):
-    page1 = [{"tid": i, "time": 1000 + i} for i in range(2000)]
-    page2 = [{"tid": 1999, "time": 2999}] + [{"tid": i, "time": 3000 + i} for i in range(5)]
+    page1 = [{"tid": i, "time": 1000 + i} for i in range(2000)]              # tids 0..1999
+    # page2 = one duplicate (tid 1999) + five genuinely-new (tids 2000..2004)
+    page2 = [{"tid": 1999, "time": 2999}] + [{"tid": i, "time": 3000 + i} for i in range(2000, 2005)]
     def resp(body):
         return page1 if body["startTime"] <= 1000 else page2
-    ft = fake_transport_cls([(lambda b: b["type"] == "userFillsByTime", None)])
-    ft._responses = [(lambda b: True, None)]  # overridden below
-    ft.__call__ = lambda body: (ft.calls.append(body), resp(body))[1]
+    ft = fake_transport_cls(side_effect=resp)        # proper hook, NOT a dunder monkeypatch
     c = HyperliquidClient(transport=ft, archive_dir=tmp_path)
     fills = c.fetch_user_fills_by_time("0xabc", start_ms=1000, max_pages=3)
     tids = [f["tid"] for f in fills]
     assert len(tids) == len(set(tids))            # deduped
-    assert len(fills) == 2005                       # 2000 + 5 new (1999 dropped as dup)
+    assert tids.count(1999) == 1                   # duplicate kept exactly once
+    assert len(fills) == 2005                       # 2000 + 5 genuinely new (1999 dropped)
+    assert c.last_fetch_truncated is False          # stopped on a short page, not the page cap
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -321,6 +330,8 @@ class HyperliquidClient:
         self._archive = Path(archive_dir)
         self._rate_delay_s = rate_delay_s
         self._clock = clock
+        self._archive_seq = 0
+        self.last_fetch_truncated = False   # set by fetch_user_fills_by_time (10k-cap proxy)
 
     def post(self, body: dict) -> object:
         resp = self._transport(body)
@@ -332,15 +343,19 @@ class HyperliquidClient:
         d = self._archive / user
         d.mkdir(parents=True, exist_ok=True)
         ts = self._clock()
-        path = d / f"{body['type']}_{ts}.json"
+        self._archive_seq += 1   # avoid same-ms overwrite during pagination
+        path = d / f"{body['type']}_{ts}_{self._archive_seq}.json"
         path.write_text(json.dumps(
             {"query_time_ms": ts, "request": body, "response": resp}))
 
     def fetch_user_fills_by_time(self, user: str, start_ms: int,
                                  end_ms: int | None = None, max_pages: int = 6) -> list[dict]:
-        """Paginate userFillsByTime (<=2000/page, <=10k available). Dedupe by tid."""
+        """Paginate userFillsByTime (<=2000/page, <=10k available). Dedupe by tid.
+        Sets self.last_fetch_truncated=True iff the page cap was hit with a still-full
+        last page (i.e. more history exists than we fetched — the 10k-cap selection-bias proxy)."""
         seen, out, cur = set(), [], start_ms
-        for _ in range(max_pages):
+        self.last_fetch_truncated = False
+        for i in range(max_pages):
             body = {"type": "userFillsByTime", "user": user,
                     "startTime": cur, "aggregateByTime": False}
             if end_ms is not None:
@@ -354,6 +369,8 @@ class HyperliquidClient:
             out.extend(new)
             if len(batch) < 2000:
                 break
+            if i == max_pages - 1:
+                self.last_fetch_truncated = True   # full last page at the cap => truncated
             cur = max(f["time"] for f in batch) + 1
             time.sleep(self._rate_delay_s)
         return out
@@ -468,7 +485,7 @@ def stop_order_rate(raw_orders: list[dict]) -> float:
     if not raw_orders:
         return 0.0
     n_stop = sum(1 for o in raw_orders
-                 if (o.get("order", o)).get("isTrigger") or (o.get("order", o)).get("isPositionTpsl"))
+                 if o.get("isTrigger") or o.get("isPositionTpsl"))   # flat shape (spike-verified)
     return n_stop / len(raw_orders)
 ```
 
@@ -504,7 +521,7 @@ def eq(seq):  # helper: list of (t_days, value)
     return [EquityPoint(int(t * H), float(v)) for t, v in seq]
 
 def test_clean_blowup_labels_at_threshold_cross():
-    curve = eq([(0, 100), (1, 120), (2, 60), (3, 0)])   # peak 120 -> 0
+    curve = eq([(0, 100), (1, 120), (2, 55), (3, 0)])   # peak 120; t=2 dd=54% (> 50%)
     t = forward_only_blowup_time(curve, [], dd_pct=0.5,
                                  recovery_frac=0.8, recovery_horizon_ms=H)
     assert t == int(2 * H)        # first bar with dd>50% that never recovers
@@ -525,12 +542,20 @@ def test_liquidation_fill_takes_precedence_if_earlier():
 
 def test_no_look_ahead_truncating_future_does_not_change_label():
     # The label at/after the candidate must depend only on data within [candidate, candidate+horizon].
-    base = eq([(0, 100), (1, 120), (2, 60)])
+    base = eq([(0, 100), (1, 120), (2, 55)])   # t=2 dd=54% (> 50%)
     future_a = base + eq([(3, 0)])
-    future_b = base + eq([(3, 0), (10, 999999)])  # wild future spike
+    future_b = base + eq([(3, 0), (10, 999999)])  # wild future spike beyond horizon
     t_a = forward_only_blowup_time(future_a, [], 0.5, 0.8, H)
     t_b = forward_only_blowup_time(future_b, [], 0.5, 0.8, H)
     assert t_a == t_b == int(2 * H)   # future beyond horizon must not matter
+
+def test_recovery_within_horizon_blocks_label_but_outside_does_not():
+    # candidate at t=2 (dd>50% of peak 120). A recovery to >=0.8*peak WITHIN the horizon
+    # cancels the blow-up; the SAME recovery placed BEYOND the horizon does not.
+    within = eq([(0, 100), (1, 120), (2, 55), (2.5, 100)])   # recover +0.5d (<= H)
+    beyond = eq([(0, 100), (1, 120), (2, 55), (4, 100)])     # recover +2d  (>  H)
+    assert forward_only_blowup_time(within, [], 0.5, 0.8, H) is None
+    assert forward_only_blowup_time(beyond, [], 0.5, 0.8, H) == int(2 * H)
 ```
 
 - [ ] **Step 2: Run to verify fail** → FAIL.
@@ -544,17 +569,20 @@ from research.hyperliquid.models import EquityPoint, Trade
 
 def forward_only_blowup_time(
     equity: list[EquityPoint], trades: list[Trade],
-    dd_pct: float, recovery_frac: float, recovery_horizon_ms: int) -> int | None:
+    dd_pct: float, recovery_frac: float, recovery_horizon_ms: int,
+    initial_peak: float = float("-inf")) -> int | None:
     """Earliest blow-up time T using ONLY data within [candidate, candidate+horizon].
     (a) first equity bar whose drawdown-from-running-peak > dd_pct AND which does not
         recover above recovery_frac*peak within recovery_horizon_ms; or
-    (b) first liquidation fill — whichever is earlier."""
+    (b) first liquidation fill — whichever is earlier.
+    `initial_peak` seeds the running peak with the genuine (e.g. pre-T0) peak so drawdown
+    is measured against true history, not just the sliced window (see label_cohort)."""
     liq_t = next((t.time for t in sorted(trades, key=lambda x: x.time)
                   if t.is_liquidation), None)
 
     eq = sorted(equity, key=lambda p: p.time)
     dd_t = None
-    peak = float("-inf")
+    peak = initial_peak
     for i, p in enumerate(eq):
         peak = max(peak, p.value)
         if peak <= 0:
@@ -709,6 +737,33 @@ def test_short_baseline_excluded_and_counted():
                        min_trades=5, min_days=0.0)
     assert man.members == []
     assert man.excluded_short_baseline == 1
+
+def test_high_pre_t0_peak_crater_is_blowup():
+    # Regression for the peak-reset hindsight bug: pre-T0 peak 200, post-T0 falls to 90
+    # = 55% drawdown from the GENUINE peak. Must label blowup (not 'stable' from a sliced peak).
+    t0 = int(10 * H)
+    trades = [Trade(int(d*H), "BTC", "Open Long", 1, 1, 0, 0, False) for d in (1, 2, 3)]
+    a = _traj("0xa", [(1, 150), (5, 200), (11, 90), (12, 85)], trades)
+    man = label_cohort([a], t0_ms=t0, window_end_ms=int(30*H),
+                       dd_pct=0.5, recovery_frac=0.8, recovery_horizon_ms=H,
+                       min_trades=3, min_days=0.0)
+    assert [m.label for m in man.members] == ["blowup"]
+
+def test_effective_n_events_clusters_by_utc_day():
+    t0 = int(10 * H)
+    def blow(addr, blow_day):
+        trs = [Trade(int(d*H), "BTC", "Open Long", 1, 1, 0, 0, False) for d in (1, 2)]
+        return _traj(addr, [(1, 100), (blow_day, 0)], trs)
+    same1, same2 = blow("0x1", 11), blow("0x2", 11)   # both blow on day 11
+    man = label_cohort([same1, same2], t0_ms=t0, window_end_ms=int(30*H),
+                       dd_pct=0.5, recovery_frac=0.8, recovery_horizon_ms=H,
+                       min_trades=2, min_days=0.0)
+    assert len(man.blowups) == 2
+    assert man.effective_n_events == 1                 # same UTC day -> ONE event cluster
+    man2 = label_cohort([same1, blow("0x3", 20)], t0_ms=t0, window_end_ms=int(30*H),
+                        dd_pct=0.5, recovery_frac=0.8, recovery_horizon_ms=H,
+                        min_trades=2, min_days=0.0)
+    assert man2.effective_n_events == 2                # different UTC days -> two events
 ```
 
 - [ ] **Step 2: Run to verify fail** → FAIL.
@@ -734,26 +789,31 @@ def label_cohort(trajectories: list[Trajectory], t0_ms: int, window_end_ms: int,
         if not traj.trades and not traj.equity:
             man.excluded_no_data += 1
             continue
-        # outcome from post-T0 data only
-        post_eq = [p for p in traj.equity if p.time >= t0_ms]
-        post_tr = [t for t in traj.trades if t.time >= t0_ms]
-        t_blow = forward_only_blowup_time(post_eq, post_tr,
-                                          dd_pct, recovery_frac, recovery_horizon_ms)
-        if t_blow is not None and t_blow > window_end_ms:
-            t_blow = None  # blow-up outside study window -> treat as stable within window
-        t_event = t_blow if t_blow is not None else window_end_ms
-        if not meets_baseline(traj, t_event_ms=t_event,
+        # Inclusion: enough warm-up history BEFORE T0 (outcome-independent — measured at
+        # T0 for everyone, blow-up or stable), so the detector has a real baseline.
+        if not meets_baseline(traj, t_event_ms=t0_ms,
                               min_trades=min_trades, min_days=min_days):
             man.excluded_short_baseline += 1
             continue
-        pre = [t for t in traj.trades if t.time < t_event]
+        # Outcome from post-T0 data only; BUT drawdown measured against the GENUINE peak —
+        # seed the running peak with the pre-T0 max so a fall from a pre-T0 high is not
+        # hidden by slicing (this is the anti-hindsight fix; without it blow-ups undercount).
+        pre_t0_peak = max((p.value for p in traj.equity if p.time < t0_ms),
+                          default=float("-inf"))
+        post_eq = [p for p in traj.equity if p.time >= t0_ms]
+        post_tr = [t for t in traj.trades if t.time >= t0_ms]
+        t_blow = forward_only_blowup_time(post_eq, post_tr, dd_pct, recovery_frac,
+                                          recovery_horizon_ms, initial_peak=pre_t0_peak)
+        if t_blow is not None and t_blow > window_end_ms:
+            t_blow = None  # blow-up outside study window -> stable within window
+        pre = [t for t in traj.trades if t.time < t0_ms]
         man.members.append(CohortMember(
             address=traj.address,
             label="blowup" if t_blow is not None else "stable",
             blowup_time=t_blow,
             event_cluster=_utc_day(t_blow) if t_blow is not None else None,
             baseline_trades=len(pre),
-            baseline_days=(t_event - pre[0].time) / 86_400_000 if pre else 0.0))
+            baseline_days=(t0_ms - pre[0].time) / 86_400_000 if pre else 0.0))
     return man
 ```
 
@@ -819,13 +879,16 @@ def run(addrs_path, t0_ms, window_end_ms, out_path, transport=None,
         archive_dir="research/hyperliquid/_archive", dd_pct=0.5, recovery_frac=0.8,
         recovery_horizon_ms=86_400_000, min_trades=30, min_days=7.0):
     c = HyperliquidClient(transport=transport, archive_dir=archive_dir)
-    addrs = [a.strip() for a in Path(addrs_path).read_text().splitlines() if a.strip()]
-    trajs = []
+    addrs = [a.strip() for a in Path(addrs_path).read_text().splitlines()
+             if a.strip() and not a.strip().startswith("#")]
+    trajs, n_truncated = [], 0
     for a in addrs:
-        trajs.append(build_trajectory(
-            a, c.fetch_user_fills_by_time(a, start_ms=0),
-            c.fetch_portfolio(a), c.fetch_ledger(a, start_ms=0),
-            c.fetch_historical_orders(a)))
+        fills = c.fetch_user_fills_by_time(a, start_ms=0)
+        if c.last_fetch_truncated:        # 10k-cap hit => truncated history (selection-bias line)
+            n_truncated += 1
+        trajs.append(build_trajectory(a, fills, c.fetch_portfolio(a),
+                                      c.fetch_ledger(a, start_ms=0),
+                                      c.fetch_historical_orders(a)))
     man = label_cohort(trajs, t0_ms, window_end_ms, dd_pct, recovery_frac,
                        recovery_horizon_ms, min_trades, min_days)
     payload = {"t0_ms": man.t0_ms, "window_end_ms": man.window_end_ms,
@@ -833,6 +896,7 @@ def run(addrs_path, t0_ms, window_end_ms, out_path, transport=None,
                "n_blowup": len(man.blowups), "n_stable": len(man.stable),
                "excluded_short_baseline": man.excluded_short_baseline,
                "excluded_no_data": man.excluded_no_data,
+               "n_truncated_10k_cap": n_truncated,
                "members": [asdict(m) for m in man.members]}
     Path(out_path).write_text(json.dumps(payload, indent=2))
     return man
@@ -870,9 +934,10 @@ This is the spec §14 phase-1 exit gate. Run the pipeline against a real frozen 
 - Create: `research/hyperliquid/candidates_t0.txt` (assembled address list; document sources at top as comments)
 - Create: `research/hyperliquid/COHORT-REPORT.md`
 
-- [ ] **Step 1: Assemble the candidate address list**
+- [ ] **Step 1 (MANUAL / offline — not a 2–5 min code step): Assemble the candidate address list**
 
-Collect from: current Hyperliquid leaderboard, public liquidation trackers (CoinGlass/HyperTracker), and large-trade feeds. Save addresses (one per line) to `research/hyperliquid/candidates_t0.txt`, with header comments naming each source and the collection date. Pick T₀ to predate ≥ several distinct volatility regimes within the data the 10k-fill cap allows.
+Collect from: current Hyperliquid leaderboard, public liquidation trackers (CoinGlass/HyperTracker), and large-trade feeds. Save addresses (one per line) to `research/hyperliquid/candidates_t0.txt`, with header comments (`#`) naming each source + collection date. Pick T₀ to predate ≥ several distinct volatility regimes within the window the 10k-fill cap allows.
+**Acceptance:** ≥ N candidate addresses (N fixed in the pre-registration commit), every source cited in the file header, and each address's first fill confirmed ≤ T₀ (genuinely in the universe at T₀, not added later). Indeterminate-length research task — the `#`-prefixed header lines are skipped by the CLI loader.
 
 - [ ] **Step 2: Run the enumerator for real**
 
