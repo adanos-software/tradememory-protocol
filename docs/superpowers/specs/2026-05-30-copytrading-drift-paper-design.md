@@ -1,21 +1,21 @@
 # Design Spec — Copy-Trading Blow-Up Early Warning Paper
 
-> Status: DRAFT for review · Date: 2026-05-30 · Author: Sean Peng (Syuan Wei Peng), Mnemox AI
+> Status: DRAFT rev2 (hardened after adversarial review) · Date: 2026-05-30 · Author: Sean Peng (Syuan Wei Peng), Mnemox AI
 > Supersedes the framing of `docs/research/arxiv-paper-behavioral-drift.md` (self-monitoring SPC paper).
 > Strategic context: `COPYTRADING-PIVOT-RESUME.md` + memory `tradememory-crypto-drift-pivot-2026-05-28.md`.
+> rev2 closes 4 review blockers: strawman baseline, survivorship/selection bias, label leakage, time-clustering. See §13 changelog.
 
 ---
 
 ## TL;DR（繁中，給 Sean 快掃）
 
-把現有那篇「self-monitoring CUSUM」論文 **reframe** 成旗艦：**在真實 Hyperliquid 鏈上資料上，偵測被跟單的 master trader 在「爆倉拖垮 follower」之前的行為漂移**。
+把現有「self-monitoring CUSUM」論文 **reframe** 成旗艦：**在真實 Hyperliquid 鏈上資料上，偵測被跟單的 master trader 在「爆倉拖垮 follower」之前的行為漂移**。
 
-- **Headline claim (A)**：偵測器在強平前中位數 **K 筆交易 / H 小時**就標紅；equity-threshold baseline (MaxDDStop) lead-time ≈ 0。
-- **Rigor (B)**：爆倉 vs 穩定 master 的鑑別力（AUC），且市場級波動期不誤報。
-- **Impact (C)**：估計可保護的 follower AUM（清楚標註「估計」）。
-- **資料**：Hyperliquid 官方 API（已 spike 驗證可行，2026-05-30）。Ground truth = fill 的 `liquidation` key + equity crater。
-- **現有論文回收**：MaxDDStop 結果 → 動機核心；BOCPD/DQS DEAD + SPC → methods 信譽。一個實驗不浪費。
-- **撼動世界的點**：真錢、真人、真爆、鏈上可驗證、可審計（SHA-256）、給機構可部署的動作（凍結跟單）。不是 synthetic grid strategy。
+- **Headline (A)**：偵測器 lead-time **贏過最強的非平凡早期 baseline**（槓桿百分位 tripwire / 回撤加速度 / 啟發式），事件叢集 CI 排除 0。**不是**跟「crater 才觸發」的門檻比（那是套套邏輯）。
+- **Rigor (B)**：爆倉 vs 穩定 master 鑑別力（AUC），事件叢集 CI；市場級波動期不誤報；報 precision/PPV + 誤凍結成本曲線。
+- **Impact (C)**：無量綱敏感度曲面（$saved / $follower-AUM / hour lead-time），**摘要不放單一 $ 數字**。
+- **資料**：Hyperliquid 官方 API（spike 2026-05-30 驗證）。Frozen-at-T₀ universe，爆/穩由未來決定。名人（Wynn）只當 appendix case study，**不進統計**。
+- **撼動世界的點**：真錢、真人、真爆、鏈上可驗證、預先註冊、抗 selection bias。不是 synthetic grid strategy。
 
 ---
 
@@ -23,160 +23,163 @@
 
 **Primary**: *Early Warning of Copy-Trading Blow-Ups: Behavioral Drift Detection for Master Traders on On-Chain Perpetual Futures*
 
-Alternatives:
-- *Catching the Blow-Up Before It Spreads: Behavioral Drift Detection for Copy-Trading Master Traders*
-- *Before the Liquidation: Lead-Time Detection of Master-Trader Behavioral Drift on Hyperliquid*
+Alternatives: *Before the Liquidation: Lead-Time Detection of Master-Trader Behavioral Drift on Hyperliquid* · *Catching the Blow-Up Before It Spreads*.
 
-Target venue: arXiv **q-fin.TR** (endorsement secured — Yijia Xiao, UCLA, 2026-05-20). Cross-list candidates: cs.LG, cs.CE (needs endorser in those categories; optional).
+Target venue: arXiv **q-fin.TR** (endorsement secured — Yijia Xiao, UCLA, 2026-05-20). Cross-list: cs.LG/cs.CE optional (needs category endorser).
 
 ---
 
-## 2. The problem (institutional lens — what makes a bank/exchange care)
+## 2. The problem (institutional lens)
 
-Copy trading lets thousands of *followers* mirror a *master trader*'s positions in real time. When a master's behavior degrades — over-leverage, revenge-adding into losses, abandoning stops — and they blow up, **the followers blow up with them, simultaneously, with no time to react.** This is:
+Copy trading lets thousands of *followers* mirror a *master* in real time. When a master's behavior degrades — over-leverage, abandoning stops, revenge margin top-ups — and they blow up, **followers blow up with them, simultaneously, with no time to react.** This is:
 
 - **Documented & regulator-flagged**: IOSCO FR/06/2025 ("Online Imitative Trading Practices: Copy…"), UK FCA + CFTC 2025–2026 finfluencer/copy-trading warnings.
 - **Unmeasured**: no vendor-neutral, transparent way for a broker to know *which master is about to blow up my followers*, early enough to act.
-- **Partially solved, badly**: ZuluTrade's ZuluGuard auto-closes drifting signal providers — but it is **forex-only, single-venue, and a black box** (14 years, no transparency, no crypto).
+- **Partially solved, badly**: ZuluTrade's ZuluGuard auto-closes drifting signal providers — but **forex-only, single-venue, black box** (14 years, no transparency, no crypto).
 
-The institutional reader (Bybit / Bitget / OKX / OTSO / BTSE risk lead, or a regulator) cares about five things, and a paper is "world-shaking" to them only if it hits all five:
-
-1. Names a risk they fear but **can't currently measure** → copy-trading blow-up contagion.
-2. Proves it on **real, adversarial data** → on-chain perpetual blow-ups, real money, verifiable.
-3. **Quantifies the money** → follower AUM at risk, lead-time in tradeable units.
-4. Gives a **deployable control action** → throttle/freeze copy inflows + auditable evidence trail.
-5. Is **transparent & auditable** → reproducible, SHA-256 audit chain (the anti-ZuluGuard).
+Institutional readers (Bybit / Bitget / OKX / OTSO / BTSE risk lead, or a regulator) treat a paper as decisive only if it: (1) names a risk they can't currently measure, (2) proves it on real adversarial data, (3) quantifies money + lead-time, (4) yields a deployable control action, (5) is transparent/auditable. We target all five — but only (1)-(3) are *scientific claims*; (4)-(5) are deployment framing (§5.5), not evidence.
 
 ## 3. The reframe (why this beats the current paper)
 
-The current paper (`arxiv-paper-behavioral-drift.md`) asks: *can an agent monitor its own win rate to reduce its own drawdown?* Its headline finding is that a trivial equity-drawdown threshold (**MaxDDStop**) beats the behavioral CUSUM detector in 93.5% of strategies. As a standalone, that result tells an institution "behavioral monitoring isn't worth it" — the opposite of world-shaking.
+The current paper asks: *can an agent monitor its own win rate to reduce its own drawdown?* Its headline: a trivial equity-drawdown threshold (**MaxDDStop**) beats the behavioral CUSUM detector in 93.5% of strategies. As a standalone, that tells an institution "behavioral monitoring isn't worth it."
 
-**The copy-trading reframe inverts the MaxDDStop result into the paper's core motivation:**
+**The copy-trading reframe inverts that result into the paper's motivation:**
 
-> MaxDDStop wins **when you can observe your own equity in real time.** A copy-trading follower **cannot observe the master's equity drawdown in time** — by the time the master's equity has fallen far enough for an equity threshold to fire, the follower has *already* taken the loss. The only way to gain *lead-time* is to detect **behavioral** drift in the master's observable order-flow **before** it shows up as an equity crater.
+> MaxDDStop wins **when you can observe your own equity in real time.** A follower **cannot observe the master's equity drawdown in time** — by the time an equity threshold fires, the follower has *already* taken the loss. The only way to gain *lead-time* is to detect **behavioral** drift in the master's observable order-flow **before** the equity crater.
 
-So the prior paper's "failure" becomes the load-bearing argument: outcome-monitoring is necessary-but-too-late for the follower; behavioral monitoring is the only thing that can be early. Nothing from the prior work is wasted (see §9).
+The prior "failure" becomes the load-bearing argument. Nothing is wasted (§9).
 
-## 4. Core claims & metrics (pre-registered)
+## 4. Core claims & metrics (pre-registered, falsifiable)
 
-**Discipline: thresholds and cohort rules are fixed in this spec BEFORE touching test data.** This is the antidote to the prior paper's inflated `p < 10⁻⁶` (which came from non-independent strategies). We pre-register to make the result credible.
+**Pre-registration is real, not cosmetic (§7.2): the detector, its α, the baselines, the cohort-defining rules, and the metric targets are frozen in a timestamped git commit BEFORE the held-out test set is touched.**
 
-### Claim A — Lead-time (HEADLINE)
-On a held-out set of real blow-up masters, the detector raises its first sustained alert a median of **K trades / H hours before** the blow-up event, with K and H reported with bootstrap CIs. Contrast against an equity-threshold baseline (the MaxDDStop analogue applied to the *master's* equity) whose lead-time is ≈ 0 by construction (it fires at the crater, not before).
-- **Falsifiable failure**: if median lead-time ≤ equity-threshold lead-time, or CI includes 0, the headline claim fails.
+### Claim A — Lead-time over non-trivial EARLY baselines (HEADLINE)
+On held-out blow-up masters, the 3-axis detector raises its first guard-banded sustained alert a median of **Δ trades / hours EARLIER than the best of three non-trivial early baselines**:
+- **B1 leverage-percentile tripwire** — fires when leverage crosses the trader's own historical p90 (self-referential, causal).
+- **B2 drawdown-velocity** — fires on the *first derivative* of equity drawdown (acceleration), NOT the terminal level.
+- **B3 heuristic** — "leverage up AND adding into a losing position," no changepoint math.
+- (B0 terminal equity threshold / MaxDDStop-analogue is reported ONLY as the "too-late" reference with lead-time ≈ 0 by construction — explicitly NOT the headline comparator.)
+- **Falsifiable failure**: if median lead-time advantage over best(B1,B2,B3) ≤ 0, or event-clustered CI includes 0, Claim A fails.
 
 ### Claim B — Discrimination (RIGOR)
-Across a population of masters over a fixed window, the detector separates *will-blow-up-within-Δ* from *will-not* with **AUC ≥ target**, AND the **false-positive rate during market-wide volatility windows** (null cohort, §6) stays below a pre-set bound — proving it detects *behavior*, not just *market moves*.
-- **Falsifiable failure**: AUC ≤ 0.5 + margin, or volatility-null FPR exceeds bound.
+Across the frozen-at-T₀ universe (§6), the detector separates *blows-up-within-Δ* from *does-not* with **AUC ≥ target**, with **event-clustered CIs** (§7.3); AND the **false-positive rate during market-wide volatility windows** (null cohort) stays below a pre-set bound; AND we report **precision/PPV and expected false-freeze rate at the operating threshold** plus a cost curve (cost of wrongful freeze vs AUM saved), because blow-ups are rare and AUC alone hides precision.
+- **Falsifiable failure**: AUC CI lower bound ≤ 0.5+margin, or volatility-null FPR exceeds bound, or PPV at operating point below a pre-set floor.
 
-### Claim C — Follower impact (IMPACT FRAME, clearly estimated)
-Counterfactual: had a broker frozen copy inflows at first sustained alert, an estimated **$X of follower AUM / N copier-accounts** would have avoided the post-alert loss. Where real follower data is unavailable, estimate via on-chain copy-vault data (GMX/Perpy) or a clearly-labelled multiplier model; **every number tagged "estimated" with its assumption stated.**
-- This is a *framing* contribution, not a statistical claim. No falsification gate; honesty gate instead (assumptions explicit, sensitivity range shown).
+### Claim C — Follower impact (IMPACT FRAME, not a stat claim)
+Presented ONLY as a **dimensionless sensitivity surface**: "$ follower loss avoided per $1 follower AUM per hour of lead-time," across freeze-latency assumptions. **No single dollar figure in the abstract.** Real-follower grounding via on-chain copy vaults (GMX/Perpy) where available; otherwise an explicitly-labelled model with a sensitivity range. Lives in Discussion, not Results headline.
 
 ## 5. Method
 
-### 5.1 Three orthogonal risk axes (not 8 factors)
-Per codex+Opus review, collapse behavior into **3 orthogonal, volatility-normalized axes** with multiple-comparison correction across axes, and an explicit `insufficient_data` state when a window is too sparse:
-
-| Axis | Captures | Example observables (all from verified API fields) |
+### 5.1 Three orthogonal risk axes (vol-normalized, per-axis sign)
+| Axis | Direction (bad) | Observables (verified API fields) |
 |---|---|---|
-| **Exposure** | leverage / size relative to account | position notional ÷ account value; size in ATR-normalized units; leverage creep |
-| **Discipline** | risk-control hygiene | stop-loss/trigger order presence rate (`isTrigger`/`isPositionTpsl`), holding-time distribution, reduce-only behavior |
-| **Tilt** | emotional/desperation drift | margin top-up frequency & acceleration (`deposit` ledger), adding into losing positions, trade-frequency spikes, win→loss streak response |
+| **Exposure** | ↑ | notional ÷ account value; size in ATR units; leverage creep |
+| **Discipline** | ↓ | stop/trigger order presence rate (`isTrigger`/`isPositionTpsl`), holding-time, reduce-only behavior |
+| **Tilt** | ↑ | margin top-up frequency/acceleration (`deposit` ledger), adding into losers, trade-frequency spikes |
 
-**Volatility normalization is mandatory** — size/equity or size/ATR — otherwise we can't distinguish "trader raised their bet" from "market got more volatile."
+Volatility normalization (size/equity or size/ATR) is mandatory — else we can't distinguish "raised the bet" from "market got volatile."
 
-### 5.2 Detector
-- **Continuous change-detection on each axis**, NOT binary CUSUM as the primary detector. Use the NIG (Normal-Inverse-Gamma) continuous changepoint from `changepoint.py`, and/or SSRT `mSPRT_t03` (the only method we validated with Type-I < 0.05; 81.4% power, Type-I=0.008 over 22,500 MC runs).
-- **Composite alert** = sustained simultaneous drift across axes, multiple-comparison-corrected. "Sustained" defined (e.g., ≥ M consecutive windows) to control false alarms.
-- Binary CUSUM, BOCPD, DQS, anti-resonance gate, CalibratedAgent are **excluded as primary** (all flagged DEAD/INVALID/wrong-tool in prior research — see §9; they appear only as honest negative-result context).
+### 5.2 Detector (committed a priori — no peeking)
+- **Per-axis one-sided sequential test** (mSPRT-style, sign-flipped per axis per §5.1), α **fixed from theory now** (mSPRT Type-I≈0.008 reference), NOT tuned on data.
+- **Composite alert** = sustained simultaneous drift across axes, **Holm-corrected across the 3 axes**, requiring ≥ M consecutive windows. **M and the composite threshold are calibrated on SYNTHETIC Monte-Carlo data (not the real test set)** to hit a target composite Type-I/power, frozen before real held-out data.
+- **A fresh 3-axis-composite Type-I/power MC is mandatory** — the single-stream mSPRT Type-I number does NOT transfer to the composite.
+- Excluded as primary (DEAD/INVALID/wrong-tool in prior research, §9): binary CUSUM, BOCPD, DQS, anti-resonance gate, CalibratedAgent. **The paper's detector code path must strip the embedded binary-CUSUM remnants in `owm/changepoint.py` (`_cusum_s`, `_cusum_threshold`, `cusum_alert`) or rename them as baseline-only — else released code contradicts the paper.**
 
-### 5.3 Ground truth (blow-up definition)
-Two-tier, both verified retrievable in the 2026-05-30 spike:
-1. **Formal liquidation** — fills carry a `liquidation` key (verified `True` on real data); gives liquidation timestamp at per-fill precision.
-2. **Equity crater** — `portfolio` accountValueHistory peak → near-zero terminal collapse (verified: James Wynn $1.89M → $0). Captures capitulation/manual-death even without a formal liquidation tag.
-- Blow-up event time T = earliest of (first liquidation fill in the terminal cascade) / (equity-crater inflection). Exact rule pre-registered before test data.
+### 5.3 Guard band against label leakage (CRITICAL)
+Exposure & Tilt are mechanically coupled to the equity curve, so an "early" alert could merely be reading a contemporaneous shadow of the crater used as the label. Firewall:
+1. **Guard band**: a counted alert MUST fire while account value ≥ **X% of running peak** AND strictly **before the first liquidation fill of the terminal cascade**. Alerts inside the cascade window don't count as "early."
+2. **Equity-decoupled ablation**: a **discipline-only** detector (stop-order presence + holding-time, no equity-derived feature) must show non-trivial lead-time survives — proving the signal isn't just the equity proxy.
+3. Margin top-ups **inside** the terminal cascade are excluded from "early" Tilt signal.
 
-### 5.4 Auditability (the anti-ZuluGuard differentiator)
-Each alert emits an auditable record: which axis drifted, the statistic value, the evidence window, the recommended action — hashed into the existing **SHA-256 linked audit chain** (`verify_audit_hash`, daily Merkle roots). This is what lets a broker defend a "freeze" decision to a regulator and to the throttled master.
+### 5.4 Ground truth (forward-only, non-circular)
+Blow-up event time **T defined causally, no hindsight**: first time cumulative drawdown from running peak exceeds a **pre-registered %** and does not recover within a **pre-registered horizon** (or first liquidation fill, whichever is earlier). The "inflection of the full curve" notion is rejected (uses future bars). Two-tier evidence both verified retrievable (spike 2026-05-30): `liquidation`-keyed fills (per-fill timestamp) + `portfolio` equity collapse.
 
-## 6. Data & cohort design
+### 5.5 Deployment framing (NOT a scientific contribution)
+Auditable alert records (axis, statistic, evidence window, action) hashed into the SHA-256 linked audit chain → lets a broker defend a freeze to a regulator. This is the anti-ZuluGuard differentiator but lives in **Discussion/deployment**, never in the contributions list as evidence for A/B/C.
 
-**Source**: Hyperliquid public info API (`api.hyperliquid.xyz/info`), no auth, free. Verified endpoints (spike 2026-05-30):
-- `userFillsByTime` — tick-by-tick fills (`closedPnl`, `px`, `sz`, `dir`, `startPosition`, `liquidation` key). Cap: 10k most recent fills/address.
-- `portfolio` — accountValueHistory + pnlHistory (equity curve).
-- `historicalOrders` — stop/trigger orders (`isTrigger`, `triggerPx`, `isPositionTpsl`, `reduceOnly`).
-- `userNonFundingLedgerUpdates` — deposits/withdrawals (margin top-up behavior).
+## 6. Data & cohort design (frozen-at-T₀ — kills selection bias)
 
-**Three cohorts, selected by outcome-blind rules to avoid hindsight bias:**
-1. **Blow-up cohort** — masters whose accounts hit the §5.3 blow-up definition within the study window. Sourced from public liquidation trackers (CoinGlass, HyperTracker, thunderhead-stats `largest_liquidated_notional_by_user`) + known cases (James Wynn `0xBC47…`, March-2025 50x ETH whale). Target N ≥ 20 (more if feasible).
-2. **Stable cohort** — masters active across the same window with no blow-up, selected by a rule fixed in advance (e.g., on a leaderboard at window-start, still solvent at window-end). Target M comparable to N.
-3. **Volatility-null cohort/windows** — market-wide high-volatility periods (e.g., large BTC/ETH moves) used to prove the detector does NOT fire on stable traders merely because the market moved.
+**Source**: Hyperliquid public info API (`api.hyperliquid.xyz/info`), no auth. Verified endpoints (spike 2026-05-30): `userFillsByTime` (fills incl. `liquidation` key; 10k-most-recent cap), `portfolio` (equity), `historicalOrders` (stop/trigger), `userNonFundingLedgerUpdates` (margin deposits).
 
-**Bias controls (first-class, this is what makes it rigorous):**
-- **No look-ahead**: detector at time t uses only data ≤ t. Lead-time measured causally.
-- **Outcome-blind cohort selection**: stable cohort chosen by a pre-window rule, never by "we know they survived."
-- **Survivorship/selection honesty**: report how cohorts were enumerated; acknowledge known limits (we can't see masters who left no on-chain trace).
-- **The 10k-fill cap caveat**: high-frequency masters (Wynn ≈ 12k fills/week) yield only ~1 week of history; lower-frequency masters yield long history. Reported per-trader; HFT-class handled by real-time capture or windowed analysis. Not a blocker.
+**Frozen universe (the anti-hindsight core):**
+1. Pick a fixed historical date **T₀**. Snapshot the universe = all addresses on the Hyperliquid leaderboard / above a pre-set activity floor **at T₀**. Freeze this list.
+2. Roll forward from T₀. **Blow-up vs stable is determined by the FUTURE**, not by trackers: a frozen-universe address that hits the §5.4 blow-up rule after T₀ = blow-up; one that doesn't = stable. **"Still solvent" is a measured outcome, never a selection filter.**
+3. Report the **realized blow-up base rate** in the frozen universe (essential for precision/PPV, Claim B).
+4. **Inclusion criterion**: minimum pre-event baseline length (≥ pre-registered trades/days before T) so the detector has a real baseline. **Disclose how many candidates this excludes** (itself a selection effect).
+5. **Famous/notorious names (James Wynn `0xBC47…`, the March-2025 50x ETH whale, CoinGlass largest-liquidated) are NOT in the statistical cohort** (conditioning on notoriety = sampling on the dependent variable). They appear ONLY as a clearly-labelled **case-study appendix**, excluded from all AUC/lead-time statistics, pseudonymized facts only (§11 ethics).
+6. **Volatility-null windows**: market-wide high-volatility periods used to prove the detector does NOT fire on stable traders merely because the market moved.
 
-## 7. Experimental design
+**Disclosed caveats**: 10k-fill cap couples history length to trade frequency (HFT masters → short baseline) → handled by the §6.4 minimum-baseline inclusion rule, with exclusions reported. On-chain crypto perps only (generalization scoped in §10).
 
-- **Retrospective (Claim A)**: for each blow-up master, run detector causally; record lead-time = T(blow-up) − T(first sustained alert). Aggregate median + bootstrap CI. Compare vs equity-threshold-on-master baseline (lead-time ≈ 0) and vs naive baselines (random alert, simple-WR window).
-- **Population/prospective-style (Claim B)**: across blow-up + stable + null cohorts, compute discrimination (AUC) and volatility-null FPR over the window.
-- **Counterfactual (Claim C)**: post-alert avoided-loss × follower model → estimated protected AUM, with sensitivity range.
-- **Mechanism appendix (synthetic)**: the existing synthetic/grid machinery demonstrates detector mechanics under controlled drift — **appendix only**, real retrospective is the main show.
-- **Stats**: pre-registered thresholds; bootstrap CIs; explicitly address cross-trader/cross-time dependence (don't repeat the prior paper's inflated p-values); report effect sizes, not just p.
+## 7. Experimental design & statistics
 
-## 8. Paper structure (section outline)
+### 7.1 Three-way split (locks pre-registration)
+**Tuning set** (set features/M/threshold) → **validation set** (sanity) → **LOCKED test set** (reported as primary). Detector + α + baselines + metric targets frozen in a **timestamped git commit before the locked test is read**. Tuning/validation results reported as exploratory only.
 
-1. Introduction — copy-trading contagion, the lead-time problem, contributions.
-2. Related work — copy trading & ZuluGuard; behavioral/concept drift; changepoint/SPC; on-chain transparency.
-3. The observability argument — why outcome-monitoring is too late for followers (MaxDDStop reframe).
-4. Method — 3 axes, vol-normalization, continuous detector, composite alert, audit chain.
-5. Data — Hyperliquid, cohorts, ground truth, bias controls.
-6. Results — A (lead-time, headline) · B (discrimination) · C (follower-impact).
-7. Negative results & boundaries — BOCPD/DQS DEAD, binary-CUSUM-vs-MaxDDStop, the 10k cap, what we can't see.
-8. Discussion — deployment as broker control, regulatory fit, ZuluGuard contrast.
-9. Conclusion.
-Appendix — synthetic mechanism validation; reproducibility (code + queried addresses + timestamps).
+### 7.2 What we measure
+- **A (lead-time)**: per blow-up master, causal run; lead-time = T(blow-up) − T(first guard-banded sustained alert); advantage over best(B1,B2,B3); aggregate with event-clustered CI.
+- **B (discrimination)**: AUC + volatility-null FPR + PPV/precision at operating point + cost curve, all event-clustered.
+- **C (impact)**: dimensionless sensitivity surface (§4C).
+- **Mechanism appendix (synthetic)**: controlled-drift demonstration of detector mechanics — appendix only.
+
+### 7.3 Dependence handling (fixes the prior paper's inflated p)
+Blow-ups **cluster in time** (one BTC/ETH crash liquidates many masters the same hour), so naive N (#traders) ≫ effective N (#independent market events). Therefore:
+- **Block / cluster-robust bootstrap clustering by liquidation-DAY (market event)**, not by trader.
+- Report **effective sample size = number of independent crash clusters**.
+- **Leave-one-event-out** robustness check.
+- All CIs reported under event-clustered resampling, never i.i.d.-by-trader.
+
+## 8. Paper structure
+1. Intro — copy-trading contagion, lead-time problem, contributions (= A lead-time, B discrimination, C impact-frame). 2. Related work — copy trading & ZuluGuard; behavioral/concept drift; changepoint/SPC; on-chain transparency. 3. Observability argument (MaxDDStop reframe). 4. Method — 3 axes, detector, guard band, ground truth. 5. Data — Hyperliquid, frozen universe, cohorts, bias controls. 6. Results — A · B (+precision/cost) · C. 7. Negative results & boundaries — BOCPD/DQS DEAD, binary-CUSUM-vs-MaxDDStop, 10k cap, what we can't see. 8. Discussion — deployment (audit chain), regulatory fit, ZuluGuard contrast, ethics. 9. Conclusion. Appendix — case studies (Wynn et al., facts only), synthetic mechanism, reproducibility (archived raw API responses + query timestamps + commit hashes).
 
 ## 9. How existing work is recycled (nothing wasted)
-
 | Prior asset | New role |
 |---|---|
-| MaxDDStop-beats-CUSUM result | §3 motivation core (outcome-monitoring too late for followers) |
-| BOCPD DEAD on sparse binary | §7 negative results; justifies continuous NIG/mSPRT choice |
-| DQS zero-separation | §7 boundary: monitoring is strategy/account-level, not per-trade |
-| SPC/CUSUM rigor + h-sensitivity | methods credibility; binary-CUSUM as a baseline |
-| SSRT `mSPRT_t03` (Type-I<0.05) | candidate primary detector |
-| SHA-256 audit chain | §5.4 auditability differentiator |
-| OWM/memory layers | optional: stores the behavioral trajectory the detector reads |
+| MaxDDStop-beats-CUSUM | §3 motivation core (outcome-monitoring too late for followers); B0 "too-late" reference |
+| BOCPD DEAD on sparse binary | §7 negative results; justifies continuous detector choice |
+| DQS zero-separation | boundary: monitoring is account-level, not per-trade |
+| SPC/CUSUM rigor + h-sensitivity | binary-CUSUM as a baseline; methods credibility |
+| SSRT mSPRT (Type-I<0.05) | per-axis sequential test basis (composite re-validated fresh) |
+| SHA-256 audit chain | §5.5 deployment differentiator (NOT a scientific claim) |
 
 ## 10. Scope (YAGNI) & out-of-scope
+**In**: Hyperliquid retrospective, frozen-universe cohorts, 3-axis detector, lead-time/discrimination/impact, guard-band + decoupled ablation, synthetic appendix. Empirical claims **scoped explicitly to on-chain crypto perpetuals**; forex/equity copy desks = future work (no implied transfer).
+**Out**: retail journaling; HFT alpha; MiFID/compliance product framing; full SaaS/billing; live broker integration; LLM coaching; horizontal memory benchmarks; multi-venue connectors.
 
-**In**: Hyperliquid retrospective on real blow-up vs stable masters; 3-axis detector; lead-time/discrimination/impact; audit trail; synthetic appendix.
+## 11. Ethics & reproducibility
+- **Pseudonymize** the statistical cohort. Case-study addresses only if publicly self-doxxed (e.g., an influencer); stick to **observable facts** (leverage, liquidation), avoid psychological labels about identifiable persons; add a **data-ethics statement**. Note the COI (authors sell the monitoring product) explicitly.
+- **Archive raw API responses with query timestamps** (the 10k-window rolls, so live re-query is non-reproducible); pin the dataset; release code + queried addresses + commit hashes.
 
-**Out (explicitly)**: retail trader journaling; HFT alpha; MiFID/compliance product framing; full SaaS/billing; live broker integration; LLM coaching; horizontal memory benchmarks (LoCoMo); multi-venue connectors. (All per pivot decision.)
+## 12. Risks & open questions
+- **R1 cohort size / base rate**: frozen universe must yield enough post-T₀ blow-ups AND enough independent crash *events* (effective N). Mitigation: choose T₀ to span ≥ several distinct volatility regimes; report effective N honestly; if too few events, widen window/universe.
+- **R2 follower data (C)**: CEX follower counts off-chain → on-chain copy vaults subset + labelled model; C is framing not a gate.
+- **R3 label leakage**: §5.3 guard band + decoupled ablation must be airtight or reviewers kill it.
+- **R4 detector novelty vs single-stream mSPRT**: 3-axis composite needs its own MC validation; don't inherit numbers.
+- **Open**: T₀ date; activity floor; baseline-length minimum; drawdown % + recovery horizon for T; X% guard-band; AUC/PPV targets — **all fixed on tuning/synthetic before locked test, in writing.**
 
-## 11. Risks & open questions
+## 13. rev2 changelog (what the adversarial review changed)
+- Headline baseline: crater-threshold (trivial) → best of non-trivial **early** baselines B1/B2/B3.
+- Cohort: tracker/notoriety-seeded + "still-solvent" filter → **frozen-at-T₀ universe**, outcome determined by future; famous names → appendix only, excluded from stats.
+- Added **§5.3 guard band + equity-decoupled ablation** against label leakage.
+- Ground-truth T: hindsight "inflection" → **forward-only drawdown rule**.
+- Stats: i.i.d.-by-trader → **event-clustered (by liquidation-day) bootstrap + effective N + leave-one-event-out**.
+- Pre-registration: targets-after-peeking → **3-way split, frozen in timestamped commit before locked test**.
+- Detector: strip binary-CUSUM remnants from paper code path; **fresh 3-axis composite Type-I/power MC**; per-axis sign.
+- Added **precision/PPV + false-freeze cost curve** (base-rate honesty).
+- Claim C: single $ figure → **dimensionless sensitivity surface**, no $ in abstract.
+- Audit chain moved from contributions → **deployment/discussion**.
+- Added **ethics (pseudonymization, COI) + reproducibility (archived raw responses)**; scoped empirical claims to crypto perps.
 
-- **R1 — Cohort size**: enough enumerable real blow-up masters with ≥ minimal history? *Mitigation*: spike confirmed rich per-address data; broaden via liquidation trackers; N≥20 target, report actual.
-- **R2 — Follower data for Claim C**: CEX copy-follower counts not on-chain. *Mitigation*: GMX/Perpy on-chain copy vaults for a real-follower subset; else clearly-estimated model. C is framing, not a gate.
-- **R3 — Selection/hindsight bias**: addressed via outcome-blind cohort rules + causal no-look-ahead (§6). Must be airtight or reviewers kill it.
-- **R4 — 10k-fill cap** for HFT-class masters (§6). Report per-trader; not a blocker.
-- **R5 — Detector tuning = overfit risk**: pre-register thresholds; hold out a test set of masters never seen during tuning.
-- **Open**: exact K/H reporting units; AUC/FPR target values (set after a tuning-set dry run, before touching held-out test set); primary detector NIG vs mSPRT_t03 (decide on tuning set).
+## 14. Build phases (after spec approval → writing-plans)
+1. **Data pipeline** — Hyperliquid fetch/normalize + frozen-universe enumeration at T₀ + raw-response archive. (New code in `scripts/research/` or `research/`; **does not touch `src/tradememory/mcp_server.py`**.)
+2. **Detector** — 3-axis vol-normalized features + per-axis sequential test + Holm-corrected sustained composite + guard band + audit-emit; fresh composite MC calibration on synthetic.
+3. **Pre-registration commit** — freeze detector/α/baselines/targets/cohort rules; timestamp.
+4. **Experiments** — A/B/C on locked test; decoupled ablation; event-clustered stats; synthetic mechanism appendix.
+5. **Writing** — assemble per §8; reproducibility appendix.
+6. **Pre-submission** — LaTeX/figures/refs; arXiv metadata; CC-BY; submit for **Monday listing** (Sun ~13:55 ET = Mon ~01:55 Taiwan) per `behavioral-drift-paper-arxiv-2026-05.md`.
 
-## 12. Build phases (after spec approval → writing-plans)
-
-1. **Data pipeline** — Hyperliquid fetch/normalize (fills, portfolio, orders, ledger) → per-trader trajectory; cohort enumeration. (New code in `scripts/research/` or `research/`, **does not touch core MCP tools**.)
-2. **Detector** — 3-axis vol-normalized features + continuous changepoint + composite sustained alert + audit-chain emit.
-3. **Retrospective experiments** — Claims A/B/C on real cohorts; synthetic mechanism appendix.
-4. **Writing** — assemble paper per §8; reproducibility appendix (addresses + query timestamps).
-5. **Pre-submission** — LaTeX/figures/refs; arXiv metadata; CC-BY; submit timed for **Monday listing** (Sun ~13:55 ET = Mon ~01:55 Taiwan) per `behavioral-drift-paper-arxiv-2026-05.md`.
-
-**Build constraints (codex+Opus consensus)**: branch `copytrading-drift-demo`; no edits to `src/tradememory/mcp_server.py`; sell lead-time/auditable/discrimination, never DD-reduction; real retrospective is the headline, synthetic is appendix; run pytest (1374 tests) green before any commit that touches `src/`.
+**Build constraints**: branch `copytrading-drift-demo`; no edits to core MCP tools; sell lead-time/auditable/discrimination, never DD-reduction; real retrospective is headline, synthetic is appendix; pytest (1374 tests) green before any `src/` commit.
 
 ---
 
-*This spec is the blueprint. Implementation begins only after spec review + Sean's approval, via the writing-plans skill.*
+*Blueprint only. Implementation begins after spec review + Sean's approval, via writing-plans.*
