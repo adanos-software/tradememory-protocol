@@ -6,6 +6,16 @@ conjugate models: Beta-Bernoulli for win/loss, Normal-Inverse-Gamma
 for continuous signals (pnl_r, hold_seconds, lot_vs_kelly).
 
 Zero external dependencies — pure Python + math module.
+
+Note on legacy binary-CUSUM
+-----------------------------
+The ``BayesianChangepoint`` class contains a complementary binary-CUSUM
+detector (the ``_legacy_cusum_*`` private attributes and the public
+``ChangePointResult.cusum_alert``/``cusum_value`` fields).  These are
+retained for backwards compatibility with pre-2026-05-30-pivot research
+but are NOT part of the copy-trading drift paper detector.  The paper
+detector lives in ``research/hyperliquid/detector/`` and uses a per-axis
+mSPRT composite (see ``ssrt/core.py``).
 """
 
 import math
@@ -15,14 +25,21 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class ChangePointResult:
-    """Result from a single changepoint update step."""
+    """Result from a single changepoint update step.
+
+    The ``cusum_alert`` and ``cusum_value`` fields reflect the legacy
+    binary-CUSUM complementary detector, retained for backwards
+    compatibility with pre-2026-05-30-pivot research.  They are NOT part
+    of the copy-trading drift paper detector (research/hyperliquid/detector/),
+    which uses a per-axis mSPRT composite.
+    """
 
     changepoint_probability: float  # P(r_t = 0 | x_1:t)
     max_run_length: int  # argmax of run length posterior
     observation_count: int
     signal_posteriors: Dict[str, Dict[str, float]]  # per-signal posterior summaries
-    cusum_alert: bool = False  # True if CUSUM detected gradual drift
-    cusum_value: float = 0.0  # current CUSUM statistic
+    cusum_alert: bool = False  # True if legacy CUSUM detected gradual drift
+    cusum_value: float = 0.0  # current legacy CUSUM statistic
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +206,13 @@ class BayesianChangepoint:
     Each update returns a ChangePointResult with the probability that
     the most recent observation is a changepoint (run length reset to 0).
 
+    The class also runs a legacy binary-CUSUM complementary detector
+    (``_legacy_cusum_*`` private attributes).  This is retained for
+    backwards compatibility with pre-2026-05-30-pivot research and is NOT
+    part of the copy-trading drift paper detector
+    (``research/hyperliquid/detector/``), which uses a per-axis mSPRT
+    composite (``ssrt/core.py``).
+
     Args:
         hazard_lambda: Expected run length between changepoints.
             Higher = changepoints less frequent. Default 50.
@@ -221,12 +245,16 @@ class BayesianChangepoint:
 
         self._observation_count = 0
 
-        # CUSUM complementary detector for gradual shifts
-        self._cusum_s: float = 0.0  # CUSUM statistic (downward drift)
-        self._cusum_target_wr: float = 0.5  # adaptive: updated from observed WR
-        self._cusum_threshold: float = 4.0
-        self._cusum_wins: int = 0  # running count for adaptive target
-        self._cusum_total: int = 0
+        # Legacy binary-CUSUM complementary detector for gradual shifts.
+        # Retained for backwards compatibility with pre-2026-05-30-pivot
+        # research.  NOT part of the copy-trading drift paper detector
+        # (research/hyperliquid/detector/), which uses a per-axis mSPRT
+        # composite.
+        self._legacy_cusum_s: float = 0.0  # CUSUM statistic (downward drift)
+        self._legacy_cusum_target_wr: float = 0.5  # adaptive: updated from observed WR
+        self._legacy_cusum_threshold: float = 4.0
+        self._legacy_cusum_wins: int = 0  # running count for adaptive target
+        self._legacy_cusum_total: int = 0
 
     def update(self, observation: Dict[str, Any]) -> ChangePointResult:
         """Process one observation and update run length posterior.
@@ -335,16 +363,16 @@ class BayesianChangepoint:
                 max_val = lp
                 max_idx = i
 
-        # CUSUM complementary detector (detects gradual downward drift)
-        # Adaptive target: use observed win rate after 20+ trades, not hardcoded 0.5
+        # Legacy binary-CUSUM complementary detector (detects gradual downward drift).
+        # Adaptive target: use observed win rate after 20+ trades, not hardcoded 0.5.
         cusum_x = 1.0 if won_val > 0.5 else 0.0
-        self._cusum_total += 1
-        self._cusum_wins += int(cusum_x)
-        if self._cusum_total >= 20:
-            self._cusum_target_wr = self._cusum_wins / self._cusum_total
+        self._legacy_cusum_total += 1
+        self._legacy_cusum_wins += int(cusum_x)
+        if self._legacy_cusum_total >= 20:
+            self._legacy_cusum_target_wr = self._legacy_cusum_wins / self._legacy_cusum_total
         # Detect degradation: accumulate when current outcome is worse than expected
-        self._cusum_s = max(0.0, self._cusum_s + (self._cusum_target_wr - cusum_x))
-        cusum_alert = self._cusum_s > self._cusum_threshold
+        self._legacy_cusum_s = max(0.0, self._legacy_cusum_s + (self._legacy_cusum_target_wr - cusum_x))
+        cusum_alert = self._legacy_cusum_s > self._legacy_cusum_threshold
 
         return ChangePointResult(
             changepoint_probability=cp_prob,
@@ -355,7 +383,7 @@ class BayesianChangepoint:
                 for name, sig in self._signals.items()
             },
             cusum_alert=cusum_alert,
-            cusum_value=round(self._cusum_s, 4),
+            cusum_value=round(self._legacy_cusum_s, 4),
         )
 
     def _truncate_signals(self, keep_indices: List[int]):
@@ -379,11 +407,11 @@ class BayesianChangepoint:
                 name: sig.get_state() for name, sig in self._signals.items()
             },
             "observation_count": self._observation_count,
-            "cusum_s": self._cusum_s,
-            "cusum_target_wr": self._cusum_target_wr,
-            "cusum_threshold": self._cusum_threshold,
-            "cusum_wins": self._cusum_wins,
-            "cusum_total": self._cusum_total,
+            "legacy_cusum_s": self._legacy_cusum_s,
+            "legacy_cusum_target_wr": self._legacy_cusum_target_wr,
+            "legacy_cusum_threshold": self._legacy_cusum_threshold,
+            "legacy_cusum_wins": self._legacy_cusum_wins,
+            "legacy_cusum_total": self._legacy_cusum_total,
         }
 
     @classmethod
@@ -395,11 +423,13 @@ class BayesianChangepoint:
         )
         detector._log_run_probs = state["log_run_probs"]
         detector._observation_count = state["observation_count"]
-        detector._cusum_s = state.get("cusum_s", 0.0)
-        detector._cusum_target_wr = state.get("cusum_target_wr", 0.5)
-        detector._cusum_threshold = state.get("cusum_threshold", 4.0)
-        detector._cusum_wins = state.get("cusum_wins", 0)
-        detector._cusum_total = state.get("cusum_total", 0)
+        # Dual-read: accept both new "legacy_cusum_*" keys (written after
+        # 2026-05-30 rename) and old "cusum_*" keys (pre-rename persisted state).
+        detector._legacy_cusum_s = state.get("legacy_cusum_s", state.get("cusum_s", 0.0))
+        detector._legacy_cusum_target_wr = state.get("legacy_cusum_target_wr", state.get("cusum_target_wr", 0.5))
+        detector._legacy_cusum_threshold = state.get("legacy_cusum_threshold", state.get("cusum_threshold", 4.0))
+        detector._legacy_cusum_wins = state.get("legacy_cusum_wins", state.get("cusum_wins", 0))
+        detector._legacy_cusum_total = state.get("legacy_cusum_total", state.get("cusum_total", 0))
 
         for name, sig_state in state["signals"].items():
             if sig_state["type"] == "beta_bernoulli":
