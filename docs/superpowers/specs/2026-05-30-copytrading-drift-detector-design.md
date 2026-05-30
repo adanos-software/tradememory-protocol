@@ -106,6 +106,8 @@ Each axis exposes a small set of primitives. All are computed from Plan 1's `Tra
 
 **Cadence (D1):** each primitive is a per-trade state machine updated on every fill; at each bucket close the detector reads the current value (carry-forward the last value if the bucket had no fill, EXCEPT counts like `topup_count`/`loser_add_count`/`fill_rate_spike` which are per-bucket aggregates resetting each bucket).
 
+**Data-source note:** `stop_attach_rate` reads **order-level** data (raw `historicalOrders` with `isTrigger`/`isPositionTpsl`, per-bucket per-opening-fill) — NOT Plan 1's precomputed aggregate scalar `Trajectory.stop_order_rate` (which is whole-history, untimestamped). The detector consumes `raw_orders` directly (within the allowed `research.hyperliquid.normalize` import); add a per-bucket normalize helper rather than wiring to the aggregate field.
+
 **Edge cases each primitive must handle (TDD targets):** zero-equity bucket (skip / NaN-guard), no fills before T₀ (handled upstream by Plan 1 `meets_baseline`), coins with <14d history for `size_in_sigma` (fall back to cross-coin pooled std), divide-by-zero in `fill_rate_spike` when trailing mean is 0 (emit 0).
 
 ---
@@ -133,7 +135,7 @@ Because inputs are z-scored, the per-axis `MixtureSPRT` is constructed with `nul
 
 **Composite (`composite.py`):**
 - At each bucket close, collect the 3 per-axis p-values.
-- **Holm step-down across the 3 axes**: sort `p_(1) ≤ p_(2) ≤ p_(3)`; the composite "fires" this bucket iff `p_(1) ≤ α/3` (= 0.00333 at α=0.01). Step-down ordering is retained to attribute which axis carried the alert (reporting only).
+- **Holm step-down across the 3 axes**: sort `p_(1) ≤ p_(2) ≤ p_(3)`; the composite "fires" this bucket iff `p_(1) ≤ α/3` (= 0.00333 at α=0.01). Step-down ordering is retained to attribute which axis carried the alert (reporting only). **This is "Holm-min-gate + sustained-M," NOT "all three axes simultaneously significant"** — a single drifting axis can carry the bucket; the real false-alarm control is the sustained-M counter, re-validated by the synthetic Type-I suite (§7). TDD tests must assert the min-gate semantics, not the stricter all-three reading.
 - **Sustained counter**: increment on a firing bucket, reset to 0 on a miss. Raise a **composite alert** at the first bucket where the counter reaches **M**.
 - `M` is grid-searched on synthetic (§7).
 
@@ -149,7 +151,7 @@ with `X = 0.70` (pre-reg Part 1 §14 / Part 2 #14). Alerts are always emitted, b
 
 ## 7. Synthetic generator (`hmm_synth.py`) — label-blind
 
-**Anchoring (labels NOT used):** from the **tuning split** (40% of addresses, seed-fixed, event-clustering respected) compute, per primitive: median, MAD, AR(1) coefficient; and the 9×9 cross-primitive rank-correlation matrix (projected to PSD). These define the emission distribution. No outcome/blow-up label enters the generator — only the marginal/covariance shape of real behavior.
+**Anchoring (labels NOT used):** from the **tuning split** (40% of addresses, seed-fixed, event-clustering respected) compute, per primitive: median, MAD, AR(1) coefficient; and the 9×9 cross-primitive **Spearman rank-correlation** matrix. Concrete emission build: treat that rank-correlation matrix as the multivariate-Gaussian **correlation** matrix, scale to a covariance by the per-primitive MAD-derived σ (`σ ≈ 1.4826·MAD`), then **PSD-project** (clip negative eigenvalues to 0, renormalize) before sampling. (Spearman, not Pearson — robust to the heavy-tailed primitives; the Gaussian shape is the stated approximation, probed by the Student-t robustness rerun in §14 R1.) No outcome/blow-up label enters the generator — only the marginal/covariance shape of real behavior.
 
 **States & emissions:**
 - 2-state HMM: `Normal` and `Drifting`.
@@ -184,7 +186,7 @@ with `X = 0.70` (pre-reg Part 1 §14 / Part 2 #14). Alerts are always emitted, b
 3. fewest total hyperparameter "degrees of freedom" (Occam tiebreak).
 The winning tuple is the frozen primary; the other two bucket lengths' best tuples are kept as robustness reruns.
 
-**Output:** a JSON artifact (`research/hyperliquid/detector/calibration_result.json`) with the full grid results, the winning tuple, realized Type-I/power, and the power-by-δ curve — the evidence cited when pre-reg Part 2 locks.
+**Output:** a JSON artifact (`research/hyperliquid/detector/calibration_result.json`) with the full grid results, the winning tuple, realized Type-I/power, the power-by-δ curve, and an explicit `typeI_target_relaxed` boolean (true iff no tuple passed at 0.02 and the 0.05 ceiling was used) — the evidence cited when pre-reg Part 2 locks, so the relaxation (if any) is on the record.
 
 ---
 
