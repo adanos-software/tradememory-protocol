@@ -38,6 +38,19 @@ Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector par
 > the frozen grid-winner tuple reflects real master behavior, not synthetic placeholders. The
 > detector form + α (#11–12) and the composite target / guard band / ablation bar (#13–15) below are
 > fixed now; only the winning (bucket/M/τ/weights/κ) tuple awaits the real tuning-split calibration run.
+>
+> **Plan 3 pre-lock checklist (from Plan-2 final whole-implementation review — firewall verdict PASS):**
+> (a) **SNR scaling** — generator scatter is 1.4826·MAD while AxisSPRT uses σ=1 and baseline std=MAD,
+>     so z-scores have std≈1.4826 and the effective per-primitive SNR is δ/1.4826, not δ. Internally
+>     self-consistent (calibration uses the same scale on both sides), but before locking either ALIGN
+>     (baseline std=1.4826·MAD, or AxisSPRT σ=1.4826, or drop the 1.4826 so δ=SNR) OR document the δ→SNR
+>     map in the methods section — else the paper's SNR table is off by 1.4826×.
+> (b) **κ identifiability** — synthetic calibration sets self_stats==universe_stats, so shrinkage returns
+>     the median regardless of κ → κ is an INERT knob and the demo winner's κ carries no signal. Plan 3
+>     MUST build the baseline from real pre-T₀ (self) vs tuning-split (universe) as DISTINCT stats so κ
+>     becomes live and its locked value is meaningful.
+> (c) **integration test** — add an end-to-end run_detector test with self_stats≠universe_stats to catch
+>     real-baseline wiring errors before deployment.
 
 | # | Parameter | Recommended | Rationale |
 |---|---|---|---|
