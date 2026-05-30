@@ -54,7 +54,7 @@ The prior "failure" becomes the load-bearing argument. Nothing is wasted (§9).
 **Pre-registration is real, not cosmetic (§7.2): the detector, its α, the baselines, the cohort-defining rules, and the metric targets are frozen in a timestamped git commit BEFORE the held-out test set is touched.**
 
 ### Claim A — Lead-time over non-trivial EARLY baselines (HEADLINE)
-On held-out blow-up masters, the 3-axis detector raises its first guard-banded sustained alert a median of **Δ wall-clock hours EARLIER than the best of three non-trivial early baselines** (wall-clock hours = primary unit; trade-count secondary):
+On held-out **idiosyncratic** blow-up masters (those who blow up on **non-market-crash days**, where behavioral drift — not an exogenous market shock — is the proximate cause; see §6 market-event tagging), the 3-axis detector raises its first guard-banded sustained alert a median of **Δ wall-clock hours EARLIER than the best of three non-trivial early baselines** (wall-clock hours = primary unit; trade-count secondary):
 - **B1 leverage-percentile tripwire** — fires when leverage crosses the trader's own historical p90 (self-referential, causal).
 - **B2 drawdown-velocity** — fires on the *first derivative* of equity drawdown (acceleration), NOT the terminal level.
 - **B3 heuristic** — "leverage up AND adding into a losing position," no changepoint math.
@@ -109,6 +109,8 @@ Auditable alert records (axis, statistic, evidence window, action) hashed into t
 5. **Famous/notorious names (James Wynn `0xBC47…`, the March-2025 50x ETH whale, CoinGlass largest-liquidated) are NOT in the statistical cohort** (conditioning on notoriety = sampling on the dependent variable). They appear ONLY as a clearly-labelled **case-study appendix**, excluded from all AUC/lead-time statistics, pseudonymized facts only (§11 ethics).
 6. **Volatility-null windows**: market-wide high-volatility periods used to prove the detector does NOT fire on stable traders merely because the market moved.
 
+**Market-event tagging + withdrawal filter (locked by 2026-05-30 viability run, `research/hyperliquid/COHORT-REPORT.md`):** a 300-master frozen-universe viability pass found **66% of raw equity-crater blow-ups fell on a single market-crash day (2026-01-07)** — market casualties, not behavioral blow-ups. Therefore each blow-up is tagged **idiosyncratic** (its UTC day has few cross-sectional craters, below a pre-registered density threshold) vs **market-event** (many masters crater that day). **Claim A (lead-time, headline) uses the idiosyncratic cohort**; **Claim B (discrimination) additionally covers crash-day "who was fragile going in."** Blow-ups must also be genuine losses (cumulative-PnL drop ≈ equity drop) to exclude withdrawals (viability median ratio 0.92 — most craters are real losses).
+
 **Disclosed caveats**: 10k-fill cap couples history length to trade frequency (HFT masters → short baseline) → handled by the minimum-baseline inclusion rule (§6 item 4), whose exclusions are reported as a named selection-bias line (this rule itself biases the cohort toward lower-frequency masters — disclosed, not silent). On-chain crypto perps only (generalization scoped in §10).
 
 ## 7. Experimental design & statistics
@@ -157,7 +159,10 @@ Blow-ups **cluster in time** (one BTC/ETH crash liquidates many masters the same
 - **R4 detector novelty vs single-stream mSPRT**: 3-axis composite needs its own MC validation; don't inherit numbers.
 - **Open**: T₀ date; activity floor; baseline-length minimum; drawdown % + recovery horizon for T; X% guard-band; AUC/PPV targets — **all fixed on tuning/synthetic before locked test, in writing.**
 
-## 13. rev2 changelog (what the adversarial review changed)
+## 13. changelog
+**rev3 (2026-05-30 viability run):** frozen-universe viability = **GO** (`research/hyperliquid/COHORT-REPORT.md`). Locked headline cohort = **idiosyncratic blow-ups (Claim A) + crash-day discrimination (Claim B)**. Added §6 market-event-day tagging + withdrawal filter after finding 66% of raw blow-ups were one market-crash day (confirms reviewer's time-clustering blocker — effective-N, not raw count, is the power unit). Pre-registered T₀/window/thresholds still to be locked in a timestamped commit before the locked test.
+
+**rev2 (adversarial review):**
 - Headline baseline: crater-threshold (trivial) → best of non-trivial **early** baselines B1/B2/B3.
 - Cohort: tracker/notoriety-seeded + "still-solvent" filter → **frozen-at-T₀ universe**, outcome determined by future; famous names → appendix only, excluded from stats.
 - Added **§5.3 guard band + equity-decoupled ablation** against label leakage.
