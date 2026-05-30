@@ -51,6 +51,18 @@ Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector par
 >     becomes live and its locked value is meaningful.
 > (c) **integration test** — add an end-to-end run_detector test with self_stats≠universe_stats to catch
 >     real-baseline wiring errors before deployment.
+>
+> **Real-data findings (2026-05-31 scaled run — see `MORNING-BRIEF-2026-05-31.md`):**
+> (d) **Sparse-primitive normalization** — count/rate primitives (topup_count, loser_add_count, …) are 0
+>     in most real buckets → MAD=0 → z-scores explode → type_i≈1. Patched with std-based scale in the
+>     scaled run; Plan 3 must decide the proper transform (log1p / rate / z-clip) before locking.
+> (e) **Behavioral baseline availability** — the 10k-fill cap × T0=2025-06-01 means high-freq masters
+>     have NO pre-T0 fill baseline (`meets_baseline` failed for all 140 fetched). DECISION NEEDED (affects
+>     pre-reg): later T₀ / early-window baseline / equity-derived proxies / accept low-freq-biased cohort.
+> (f) **Nested order structure** — real `historicalOrders` nest under "order"; `order_events` fixed to
+>     handle both (mock flat + real nested). 154 tests green.
+> Indicative real-data smoke: frozen detector fired on 3/6 idiosyncratic blow-up masters, carrying axis
+> = exposure, median lead ≈ 492h (~20d) — NOT a pre-reg number (in-window self-baseline, no B1/B2/B3).
 
 | # | Parameter | Recommended | Rationale |
 |---|---|---|---|
