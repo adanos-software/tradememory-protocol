@@ -28,6 +28,14 @@ import json
 import math
 import random
 
+__all__ = [
+    "measure",
+    "lda_weights",
+    "grid_search",
+    "pick_winner",
+    "run_calibration",
+]
+
 from research.hyperliquid.detector.config import (
     AXES,
     BAD_DIR,
