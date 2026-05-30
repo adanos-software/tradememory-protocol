@@ -1,0 +1,72 @@
+{
+  "grid_rows": [
+    {
+      "bucket_ms": 14400000,
+      "M": 2,
+      "tau": 0.3,
+      "weights": "equal",
+      "kappa": 14,
+      "type_i": 0.0,
+      "power": 1.0,
+      "median_detection_latency_buckets": 9.0,
+      "dof": 3,
+      "lda_seed": 5732618
+    },
+    {
+      "bucket_ms": 14400000,
+      "M": 3,
+      "tau": 0.3,
+      "weights": "equal",
+      "kappa": 14,
+      "type_i": 0.0,
+      "power": 1.0,
+      "median_detection_latency_buckets": 10.0,
+      "dof": 3,
+      "lda_seed": 9088812
+    },
+    {
+      "bucket_ms": 14400000,
+      "M": 4,
+      "tau": 0.3,
+      "weights": "equal",
+      "kappa": 14,
+      "type_i": 0.0,
+      "power": 1.0,
+      "median_detection_latency_buckets": 12.0,
+      "dof": 3,
+      "lda_seed": 9935669
+    },
+    {
+      "bucket_ms": 14400000,
+      "M": 6,
+      "tau": 0.3,
+      "weights": "equal",
+      "kappa": 14,
+      "type_i": 0.0,
+      "power": 1.0,
+      "median_detection_latency_buckets": 14.0,
+      "dof": 3,
+      "lda_seed": 12838451
+    }
+  ],
+  "winning_tuple": {
+    "bucket_ms": 14400000,
+    "M": 2,
+    "tau": 0.3,
+    "weights": "equal",
+    "kappa": 14,
+    "type_i": 0.0,
+    "power": 1.0,
+    "median_detection_latency_buckets": 9.0,
+    "dof": 3,
+    "lda_seed": 5732618
+  },
+  "realized_type_i": 0.0,
+  "realized_power": 1.0,
+  "power_by_delta": {
+    "0.5": 1.0,
+    "1.0": 1.0,
+    "1.5": 1.0
+  },
+  "typeI_target_relaxed": false
+}

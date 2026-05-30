@@ -24,6 +24,21 @@ Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector par
 
 ## Part 2 — Detector & gates (lock AFTER Plan 2 synthetic MC, before real test)
 
+> **Status 2026-05-31 — detector machinery BUILT + validated; final lock DEFERRED to Plan 3 (Sean approved).**
+> Plan 2 is complete: `research/hyperliquid/detector/` holds the full pipeline (per-trade behavioral
+> primitives → bucket-close per-axis observations → per-axis mSPRT reusing `ssrt/core.py` →
+> Holm-min-gate + sustained-M composite → 70% guard band), the label-blind 2-state HMM synthetic
+> generator, the calibration grid + pickup rule, and the discipline-only ablation harness — **154
+> tests green**, every phase implementer→spec-review→code-review. A synthetic-anchor demo calibration
+> validates the machinery end-to-end (`research/hyperliquid/detector/calibration_result_demo.json`:
+> demo winner 4h/M=2/equal/κ=14, Type-I 0.0 / power 1.0 — power saturates because synthetic anchors
+> are noise-free; **NOT a pre-registered number**).
+> **Decision (Sean, 2026-05-31): the FINAL Part-2 lock happens at the START of Plan 3**, after the
+> real tuning-split marginals (40% split, outcome-blind, no locked-test contact) are computed — so
+> the frozen grid-winner tuple reflects real master behavior, not synthetic placeholders. The
+> detector form + α (#11–12) and the composite target / guard band / ablation bar (#13–15) below are
+> fixed now; only the winning (bucket/M/τ/weights/κ) tuple awaits the real tuning-split calibration run.
+
 | # | Parameter | Recommended | Rationale |
 |---|---|---|---|
 | 11 | **Primary detector** | per-axis one-sided sequential test (mSPRT-style), sign per axis (exposure↑, discipline↓, tilt↑); composite = Holm-corrected across 3 axes, sustained ≥ **M** windows | One committed detector; binary-CUSUM remnants stripped from the paper code path. |
