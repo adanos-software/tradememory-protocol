@@ -1,6 +1,6 @@
 # Pre-Registration — DRAFT for Sean's approval
 
-> Status: **DRAFT.** When Sean approves, this becomes the **timestamped pre-registration commit** the paper cites (spec §7.1/§7.2). Values are chosen on principle + the 2026-05-30 viability scoping (`COHORT-REPORT.md`) — **NOT fit to the locked test set, which stays untouched until the detector is frozen.**
+> Status: **Part 1 APPROVED & LOCKED 2026-05-30** — this commit is the timestamped pre-registration record the paper cites (spec §7.1/§7.2). **Part 2 (detector) locks after Plan 2's synthetic Monte-Carlo calibration, before the locked test is read.** Values chosen on principle + the 2026-05-30 viability scoping (`COHORT-REPORT.md`) — **NOT fit to the locked test set, which stays untouched until the detector is frozen.**
 > Spec: `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md` · Headline cohort LOCKED: idiosyncratic lead-time (A) + crash-day discrimination (B).
 
 Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector params lockable AFTER Plan 2's synthetic Monte-Carlo calibration** (the detector must be calibrated on synthetic data, not real outcomes, then frozen before the real locked test).
@@ -51,13 +51,13 @@ Behavioral-axis feature engineering details; the follower-impact model; any post
 
 ---
 
-## Sean's call (the only things that need you)
-1. **T₀ = 2025-06-01 / window end 2026-04-30** — OK, or different?
-2. **dd_pct 0.70** primary (+0.5/0.85 robustness) — OK?
-3. **Market-event τ = 3% of active universe** — OK?
-4. **Universe floor: pre-T₀ peak ≥ \$25k** — OK, or higher/lower bar for "copy-worthy master"?
-5. **Claim gates** (AUC CI>0.65, FPR<0.10, PPV≥0.30) — OK as the falsifiable bars, or adjust?
+## Sean's call — ✅ APPROVED 2026-05-30 (all five as recommended)
+1. **T₀ = 2025-06-01 / window end 2026-04-30** ✅
+2. **dd_pct 0.70** primary (+0.5/0.85 robustness) ✅
+3. **Market-event τ = 3% of active universe** ✅
+4. **Universe floor: pre-T₀ peak ≥ \$25k** ✅
+5. **Claim gates** (A lead-time>0 CI-excludes-0; B AUC-CI>0.65 / FPR<0.10 / PPV≥0.30; C no \$ in abstract) ✅
 
-Approve (or amend) these → I cut the **timestamped pre-registration commit** → Plan 2 (detector) begins against frozen rules.
+This commit IS the timestamped Part-1 pre-registration → Plan 2 (detector) begins against these frozen rules; Part 2 locks after the synthetic MC, before the locked test.
 
 > **Context note:** Plan 2 (the detector + synthetic MC) is a fresh multi-day chunk. Recommend starting it in a **new session** for context hygiene — this repo's CLAUDE.md + spec + COHORT-REPORT + this draft fully capture the resume point, so zero context is lost.
