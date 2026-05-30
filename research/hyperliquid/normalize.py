@@ -58,9 +58,10 @@ def order_events(raw_orders):
     """
     out = []
     for o in raw_orders:
+        od = o.get("order", o)  # real historicalOrders nest under "order"; mock fixtures are flat
         out.append({
-            "coin": o["coin"],
-            "ts": int(o["timestamp"]),
-            "is_trigger": bool(o.get("isTrigger") or o.get("isPositionTpsl")),
+            "coin": od["coin"],
+            "ts": int(od["timestamp"]),
+            "is_trigger": bool(od.get("isTrigger") or od.get("isPositionTpsl")),
         })
     return out
