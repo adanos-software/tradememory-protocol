@@ -142,12 +142,10 @@ def _psd_project(matrix: list[list[float]]) -> list[list[float]]:
             return jittered
         except ValueError:
             eps *= 10.0
-    # Last resort: dominate with a large diagonal so Cholesky is guaranteed.
-    jittered = [row[:] for row in sym]
-    for i in range(n):
-        jittered[i][i] += 1.0
-    _cholesky(jittered)  # raises if even this fails (it won't for real corr mats)
-    return jittered
+    raise ValueError(
+        "_psd_project failed: matrix not repairable to PSD with diagonal jitter "
+        "up to eps=1.0 (input is far from a valid correlation matrix)"
+    )
 
 
 def _box_muller(rng, n: int) -> list[float]:
@@ -233,6 +231,8 @@ def _mean_vector(spec: SynthSpec, drifting: bool) -> list[float]:
 # ---------------------------------------------------------------------------
 def _pick_onset(spec: SynthSpec, rng) -> int | None:
     """Resolve the onset bucket index from theta_onset (see module docstring)."""
+    # 0.0 and 1.0 are exact sentinels — the calibration grid passes them as
+    # literals. Any intermediate value takes the single-absorbing-onset path.
     if spec.theta_onset == 0.0:
         return None
     if spec.theta_onset == 1.0:
@@ -243,7 +243,7 @@ def _pick_onset(spec: SynthSpec, rng) -> int | None:
     return rng.randrange(spec.length)
 
 
-def generate_stream(spec: SynthSpec):
+def generate_stream(spec: SynthSpec) -> tuple[list[dict[str, float]], int | None]:
     """Generate a synthetic master stream from a SynthSpec.
 
     Returns
