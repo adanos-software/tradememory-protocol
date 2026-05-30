@@ -1,0 +1,63 @@
+# Pre-Registration — DRAFT for Sean's approval
+
+> Status: **DRAFT.** When Sean approves, this becomes the **timestamped pre-registration commit** the paper cites (spec §7.1/§7.2). Values are chosen on principle + the 2026-05-30 viability scoping (`COHORT-REPORT.md`) — **NOT fit to the locked test set, which stays untouched until the detector is frozen.**
+> Spec: `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md` · Headline cohort LOCKED: idiosyncratic lead-time (A) + crash-day discrimination (B).
+
+Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector params lockable AFTER Plan 2's synthetic Monte-Carlo calibration** (the detector must be calibrated on synthetic data, not real outcomes, then frozen before the real locked test).
+
+---
+
+## Part 1 — Data & cohort (lock NOW)
+
+| # | Parameter | Recommended value | Rationale |
+|---|---|---|---|
+| 1 | **Universe** | Hyperliquid leaderboard snapshot (37,872 addrs), filtered to: first fill ≤ T₀, **pre-T₀ peak perp account value ≥ \$25k**, ≥ 2 pre-T₀ equity points | "Master worth copying" floor; removes dust; ensures a pre-T₀ baseline exists. Outcome-blind (no survival filter). |
+| 2 | **T₀ (freeze date)** | **2025-06-01 UTC** | Spans multiple 2025–26 volatility regimes → more *independent* crash events (the real power unit); far enough back that leaderboard accounts plausibly predate it. **Coverage verified in the run** — if too few qualify, fall back to 2025-09-01. |
+| 3 | **Window end** | **2026-04-30 UTC** (≈11-month forward window) | Leaves a clean held-out gap before "now"; ~2× the viability window → expect ~2× independent events. |
+| 4 | **Blow-up drawdown `dd_pct`** | **0.70** primary; robustness reruns at **0.50** and **0.85** | 70% peak-to-trough = catastrophic/account-dead. Report all three so the threshold isn't a lucky pick. |
+| 5 | **`recovery_frac` / `recovery_horizon`** | **0.80 / 30 days** | Matches the coarse (~weekly) `portfolio` equity granularity; recovery to 80% of peak within a month cancels a transient dip. |
+| 6 | **Withdrawal filter** | blow-up counts only if **cumulative-PnL drop ≥ 0.5 × equity drop** across the crater | Excludes equity drops that are withdrawals, not losses. Viability median ratio 0.92 → most craters already qualify. |
+| 7 | **Market-event-day threshold `τ`** | a UTC day is **market-event** if **≥ 3% of the active universe** craters that day; else **idiosyncratic** | Behaviorally-independent blow-ups cannot plausibly synchronize >3% of masters on one day without a common shock. Cleanly separates 2026-01-07 (59% in viability) from the idiosyncratic tail (<3%). |
+| 8 | **Min-baseline inclusion** | **≥ 50 fills AND ≥ 14 days** of history before T₀ (within the available ≤10k-fill window) | Enough to estimate the 3 behavioral axes. Addresses whose 10k-fill window doesn't reach T₀ are **flagged truncated + excluded from behavioral analysis**, reported as a named selection-bias line (biases toward lower-frequency masters — disclosed). |
+| 9 | **Cohorts** | **Idiosyncratic** (non-event-day, loss-confirmed, baseline-met) = Claim A. **Crash-day** (event-day blow-ups vs matched survivors) = Claim B. **Stable** (no blow-up in window, baseline-met). **Volatility-null** = event days, to test the detector doesn't fire on stable masters just because the market crashed. | Direct from the locked headline decision + viability finding. |
+| 10 | **Processing** | Stage 1: equity-only labeling on the **full qualifying universe** (1 call/addr, throttled ≥0.4s + retry on 429). Stage 2: full trajectory (fills/orders/ledger) only for the labeled cohort (all blow-ups + a seed-fixed matched stable sample). | No sampling bias on labeling; bounded cost on the expensive pulls. |
+
+## Part 2 — Detector & gates (lock AFTER Plan 2 synthetic MC, before real test)
+
+| # | Parameter | Recommended | Rationale |
+|---|---|---|---|
+| 11 | **Primary detector** | per-axis one-sided sequential test (mSPRT-style), sign per axis (exposure↑, discipline↓, tilt↑); composite = Holm-corrected across 3 axes, sustained ≥ **M** windows | One committed detector; binary-CUSUM remnants stripped from the paper code path. |
+| 12 | **Per-axis α** | **0.01** | mSPRT validated Type-I ≈ 0.008 (22,500 MC). |
+| 13 | **Composite M + threshold** | set on **synthetic MC** to hit **composite Type-I ≤ 0.05, power ≥ 0.70**; frozen before real test | The single-stream Type-I does NOT transfer to the 3-axis composite — fresh MC mandatory. |
+| 14 | **Guard band** | alert counts as "early" only while equity ≥ **70% of peak** AND before the first liquidation fill | Anti-label-leakage (Exposure/Tilt are equity-coupled). |
+| 15 | **Ablation pass bar** | discipline-only detector retains **≥ 50%** of full-detector lead-time, event-clustered CI excludes 0 | Proves the signal isn't just an equity shadow. |
+
+## Part 3 — Claim gates (falsifiable, pre-set)
+
+| Claim | Primary gate (pre-registered) |
+|---|---|
+| **A — lead-time (HEADLINE)** | On the idiosyncratic locked-test cohort: median lead-time advantage over **best of {B1 leverage-percentile, B2 drawdown-velocity, B3 leverage-up-and-add}** is **> 0**, event-clustered 95% CI **excludes 0**. (Report the hours; no minimum pre-set beyond >0.) |
+| **B — discrimination** | Idiosyncratic prediction **AUC 95%-CI lower bound > 0.65**; **volatility-null FPR < 0.10**; **PPV ≥ 0.30** at the operating threshold (honest given low base rate) + cost curve. |
+| **C — follower impact** | dimensionless sensitivity surface only; **no single \$ figure in the abstract**; no statistical gate. |
+
+## Part 4 — Statistical procedure (lock NOW)
+
+- **Event-clustered bootstrap** clustering by **UTC liquidation-day** (not by trader), **5,000** resamples; report **effective-N = number of independent crash clusters**; **leave-one-event-out** robustness.
+- **3-way split**, seed-fixed by address with event-clustering respected: **tuning 40% / validation 20% / LOCKED test 40%**. Detector + α + M + all targets frozen in this commit's successor (post-MC) **before** the locked test is read; publish the commit hash in the paper.
+- **Robustness reruns**: dd_pct ∈ {0.5, 0.7, 0.85}; T₀ fallback {2025-06, 2025-09}.
+
+## Part 5 — NOT pre-registered (exploratory, labelled as such)
+Behavioral-axis feature engineering details; the follower-impact model; any post-hoc subgroup analysis; case studies (James Wynn et al. — appendix, excluded from all stats).
+
+---
+
+## Sean's call (the only things that need you)
+1. **T₀ = 2025-06-01 / window end 2026-04-30** — OK, or different?
+2. **dd_pct 0.70** primary (+0.5/0.85 robustness) — OK?
+3. **Market-event τ = 3% of active universe** — OK?
+4. **Universe floor: pre-T₀ peak ≥ \$25k** — OK, or higher/lower bar for "copy-worthy master"?
+5. **Claim gates** (AUC CI>0.65, FPR<0.10, PPV≥0.30) — OK as the falsifiable bars, or adjust?
+
+Approve (or amend) these → I cut the **timestamped pre-registration commit** → Plan 2 (detector) begins against frozen rules.
+
+> **Context note:** Plan 2 (the detector + synthetic MC) is a fresh multi-day chunk. Recommend starting it in a **new session** for context hygiene — this repo's CLAUDE.md + spec + COHORT-REPORT + this draft fully capture the resume point, so zero context is lost.
