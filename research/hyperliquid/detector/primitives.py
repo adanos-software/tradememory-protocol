@@ -158,14 +158,17 @@ class PrimitiveState:
         # Walk fills
         # ----------------------------------------------------------------
         max_sz = 0.0
-        last_coin = None
+        max_sz_coin = None
 
         for tr in bucket.fills:
             delta = _signed(tr.direction, tr.sz)
             coin = tr.coin
-            last_coin = coin
 
-            max_sz = max(max_sz, abs(tr.sz))
+            # size_in_sigma must normalise the largest fill by ITS OWN coin's sigma,
+            # not the last fill's coin (matters in multi-coin buckets).
+            if abs(tr.sz) > max_sz:
+                max_sz = abs(tr.sz)
+                max_sz_coin = coin
 
             # Discipline: open-time tracking (before position update)
             pos_before = self._pos.get(coin, 0.0)
@@ -209,7 +212,7 @@ class PrimitiveState:
         notional_growth = (abs_notional_end - abs_notional_start) / eq
 
         if bucket.fills:
-            sig = self.coin_sigma.get(last_coin, self.pooled_sigma)
+            sig = self.coin_sigma.get(max_sz_coin, self.pooled_sigma)
         else:
             sig = self.pooled_sigma
         size_in_sigma = max_sz / max(1e-9, sig)

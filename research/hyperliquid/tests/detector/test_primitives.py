@@ -39,6 +39,18 @@ def test_size_in_sigma_scales_by_coin_vol():
     assert vals["size_in_sigma"] == 2.0
 
 
+def test_size_in_sigma_uses_largest_fills_coin_in_multicoin_bucket():
+    # largest fill is ETH(sz=10, sigma=5); last fill is BTC(sz=1, sigma=1).
+    # must normalise by ETH's sigma -> 10/5 = 2.0, not the last coin's -> 10/1 = 10.
+    traj = mk_traj(trades=[mk_trade(2, coin="ETH", direction="Open Long", px=10, sz=10),
+                           mk_trade(6, coin="BTC", direction="Open Long", px=100, sz=1)],
+                   equity=mk_eq([(0, 1000), (H, 1000)]))
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={"ETH": 5.0, "BTC": 1.0}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["size_in_sigma"] == 2.0
+
+
 def test_dict_shape_has_all_9_keys():
     traj = mk_traj(equity=mk_eq([(0, 100), (H, 100)]))
     buckets = bucketize(traj, 0, H, H)
