@@ -188,6 +188,17 @@ def test_loser_add_zero_when_adding_into_winning_position():
     assert vals["loser_add_count"] == 0
 
 
+def test_loser_add_counts_short_side_adding_into_loss():
+    # Open Short at 100, then add Short at 110 (price moved up against the short = loss) -> loser_add
+    traj = mk_traj(trades=[mk_trade(2, direction="Open Short", px=100, sz=1),
+                           mk_trade(6, direction="Open Short", px=110, sz=1)],
+                   equity=mk_eq([(0, 100), (H, 80)]))
+    buckets = bucketize(traj, 0, H, H)
+    st = PrimitiveState(coin_sigma={"BTC": 1.0}, pooled_sigma=1.0)
+    vals = st.bucket_values(buckets[0])
+    assert vals["loser_add_count"] == 1
+
+
 def test_fill_rate_spike_zero_when_no_history():
     # First bucket: no trailing history → 0
     traj = mk_traj(trades=[mk_trade(5, direction="Open Long", px=100, sz=1)],

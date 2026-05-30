@@ -71,7 +71,6 @@ class PrimitiveState:
         # --- Tilt state ---
         # Rolling 24h fill-count window: deque of (bucket_end_ms, fill_count)
         self._fill_history: deque = deque()     # (bucket_end_ms, fill_count)
-        self._prev_fill_rate_spike: float = 0.0
 
         # avg-entry tracking for loser_add
         self._avg_entry: dict[str, float] = {}  # coin -> weighted avg entry px
@@ -245,7 +244,8 @@ class PrimitiveState:
             1 for ev in bucket.ledger if ev.type == "deposit"
         )
 
-        # fill_rate_spike: trim stale entries from rolling window
+        # fill_rate_spike: trim stale entries from the rolling window.
+        # cutoff uses <= so the trailing window is (end-24h, end] (exclusive lower bound).
         cutoff_ms = bucket.end_ms - H24_MS
         while self._fill_history and self._fill_history[0][0] <= cutoff_ms:
             self._fill_history.popleft()
@@ -254,7 +254,6 @@ class PrimitiveState:
         if self._fill_history:
             trailing_mean = sum(c for _, c in self._fill_history) / len(self._fill_history)
             fill_rate_spike = total_fills / max(1e-9, trailing_mean)
-            self._prev_fill_rate_spike = fill_rate_spike
         else:
             fill_rate_spike = 0.0
 
