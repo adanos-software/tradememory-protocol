@@ -631,6 +631,8 @@ def axis_observations(prim_values, baseline, cfg):
 
 Thin wrapper: one `MixtureSPRT(alpha=cfg.alpha, tau=cfg.tau[axis], sigma=1, null_mean=0, burn_in=cfg.burn_in)` per axis. `update(axis, signed_obs)` → p-value. Reuses the MC-validated engine; NO reimplementation.
 
+> **burn_in semantics (do not "fix"):** `MixtureSPRT.burn_in` gates only the engine's own `RETIRE` *decision*; `.p_value` is always-valid and real even during burn_in. `AxisSPRT` returns it unconditionally and `Composite` (Task 9) has no separate burn_in gate, so the composite may start counting fires before an axis clears burn_in. This is intentional — the synthetic Type-I suite measures the resulting false-alarm rate and the calibrated M absorbs it (spec R2). Adding burn_in masking would silently change calibration.
+
 - [ ] **Step 1: Write the failing test**
 
 ```python
@@ -930,9 +932,10 @@ def test_run_on_stream_alerts_on_drift_after_onset():
     s={a:{p:PrimitiveStats(0.0,1.0,10_000) for p in PRIMITIVES[a]} for a in AXES}
     u={a:{p:PrimitiveStats(0.0,1.0,9999) for p in PRIMITIVES[a]} for a in AXES}
     base=BaselineStats(s,u)
+    keys=[p for a in AXES for p in PRIMITIVES[a]]
+    ident={k:{j:(1.0 if k==j else 0.0) for j in keys} for k in keys}
     spec=SynthSpec(anchors={a:{p:{"median":0.0,"mad":1.0} for p in PRIMITIVES[a]} for a in AXES},
-                   cov={k:{j:(1.0 if k==j else 0.0) for a in AXES for p in PRIMITIVES[a] for k in [p]
-                           for jj in [None]} for a in AXES for k in PRIMITIVES[a]},  # identity (see helper)
+                   cov=ident,
                    delta=2.0, theta_onset=1.0, theta_persist=1.0, length=200, seed=3)
     stream,onset=generate_stream(spec)
     cfg=DetectorConfig(bucket_ms=1, M=3, tau={a:0.3 for a in AXES},
@@ -941,7 +944,7 @@ def test_run_on_stream_alerts_on_drift_after_onset():
     assert any(r.alert_raised for r in recs)
 ```
 
-> Use the `_identity_cov()` helper from `test_hmm_synth.py` (move it into `helpers.py` to share) rather than the inline mess above — the plan author should refactor `_identity_cov`/`_anchors` into `helpers.py` in this task.
+> In Step 3, refactor the shared `_anchors`/`_identity_cov` test builders into `helpers.py` as `anchors_flat()`/`identity_cov()` so Tasks 14 and 16 can import them (Task 14 uses exactly those names). The inline `ident` above is correct — it just becomes the shared helper.
 
 - [ ] **Step 2: Run** → FAIL.
 - [ ] **Step 3: Implement** `run_detector_on_stream`; refactor `_anchors`/`_identity_cov` into `helpers.py`.
@@ -1077,6 +1080,8 @@ def test_scenario_A_discipline_only_recovers_measurable_lead():
 
 - [ ] **Step 1: Grep consumers** — Run: `git grep -n "cusum_alert\|cusum_value\|_cusum_" -- src tests`. Record every hit. Confirm (spec §10 + reviewer): no public REST/MCP surface exposes these (server.py / mcp_server.py have zero refs). If any NEW public consumer appears, STOP and surface to human.
 
+> **Scope:** rename targets live in `src/tradememory/owm/changepoint.py` ONLY (the `_cusum_*` attributes + `ChangePointResult.cusum_alert`/`cusum_value`). The grep ALSO hits `src/tradememory/owm/drift.py` (a local `cusum_values` list variable + a docstring) — that is a DIFFERENT legacy DD-CUSUM construct; do NOT touch it.
+
 - [ ] **Step 2: Run baseline** — `python -m pytest tests/ -q`. Expected: **1374 passed** (record the exact number/skips before touching anything).
 
 - [ ] **Step 3: Rename internals + dual-read state + docstrings** — `_cusum_s→_legacy_cusum_s` etc.; keep public `ChangePointResult.cusum_alert`/`cusum_value` field NAMES; `from_state` reads both new and old JSON keys; update module + class docstrings to the spec §10 wording ("Legacy binary-CUSUM … NOT part of the copy-trading drift paper detector").
@@ -1096,7 +1101,7 @@ def test_scenario_A_discipline_only_recovers_measurable_lead():
 - Modify: `research/hyperliquid/PRE-REGISTRATION-DRAFT.md` (fill Part 2 values from the artifact)
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Run the calibration** — invoke `run_calibration` (a small `python -m research.hyperliquid.detector.calibration` entry or a one-off script under `scripts/research/`) with the pre-registered N (≥10,000 synthetic/cell for the final; a smaller smoke first). Anchors/cov come from the **tuning split** marginals — until Plan 3 enumerates the real tuning split, use the spec-sanctioned placeholder anchors flagged clearly as provisional, OR defer the FINAL numeric lock to the start of Plan 3 when the tuning split exists. **Decision point — surface to Sean:** lock Part 2 on synthetic-only anchors now, vs. lock at Plan 3 start once tuning-split marginals are computed. (Recommended: compute tuning-split marginals first — they are outcome-blind and don't touch the locked test — then lock. Add a tiny Plan-3 pre-task for it.)
+- [ ] **Step 1: Run the calibration** — invoke `run_calibration` (a small `python -m research.hyperliquid.detector.calibration` entry or a one-off script under `scripts/research/`) with the pre-registered N (≥10,000 synthetic/cell for the final; a smaller smoke first). Anchors/cov come from the **tuning split** marginals — until Plan 3 enumerates the real tuning split, use the spec-sanctioned placeholder anchors flagged clearly as provisional, OR defer the FINAL numeric lock to the start of Plan 3 when the tuning split exists. **Decision point — STOP and ask Sean before proceeding past this step:** lock Part 2 on synthetic-only anchors now, vs. lock at Plan 3 start once tuning-split marginals are computed. (Recommended: compute tuning-split marginals first — they are outcome-blind and don't touch the locked test — then lock. Add a tiny Plan-3 pre-task for it.)
 
 - [ ] **Step 2: Inspect the artifact** — confirm `power≥0.70`, `type_i≤0.05`, record `typeI_target_relaxed`, the winning `(bucket,M,tau,weights,kappa)`, and the `power_by_delta` curve.
 
