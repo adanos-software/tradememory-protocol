@@ -108,3 +108,11 @@ research/hyperliquid/leaderboard_raw.json
 research/hyperliquid/cohort_stage1_full.jsonl
 research/hyperliquid/cohort_stage1_scaled.json
 research/hyperliquid/cohort_behavioral.json
+research/hyperliquid/cohort_behavioral_full.jsonl
+research/hyperliquid/cohort_behavioral_scaled.json
+
+# LaTeX build helpers / intermediates (paper dir)
+research/hyperliquid/paper/fonts.conf
+research/hyperliquid/paper/main.aux
+research/hyperliquid/paper/main.out
+research/hyperliquid/paper/main.idx
