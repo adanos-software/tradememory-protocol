@@ -53,8 +53,9 @@ T0_MS = int(datetime(2025, 6, 1, tzinfo=timezone.utc).timestamp() * 1000)
 WINDOW_END_MS = int(datetime(2026, 4, 30, tzinfo=timezone.utc).timestamp() * 1000)
 BUCKET_MS = 4 * 3600 * 1000
 
-N_WORKERS = 5
-MIN_INTERVAL = 0.18
+N_WORKERS = 6                # heavy endpoints (userFillsByTime) are weight-limited
+MIN_INTERVAL = 0.5           # ~2 req/s global; 429 errors are NOT persisted (re-fetched
+                             # on resume) so transient rate-limits never lose a master
 STABLE_RATIO_DEFAULT = 1.0   # matched stable sample size = ratio * n_idiosyncratic_blowup
 
 _rate_lock = threading.Lock()
@@ -74,7 +75,7 @@ def _rate_gate():
         time.sleep(wait)
 
 
-def robust_post(body, max_retry=7):
+def robust_post(body, max_retry=9):
     delay = 1.0
     for attempt in range(max_retry):
         _rate_gate()
@@ -197,17 +198,16 @@ def run(max_blowup=None, stable_ratio=STABLE_RATIO_DEFAULT):
     done = set()
     if JSONL.exists():
         for ln in JSONL.read_text(encoding="utf-8").splitlines():
-            if ln.strip():
-                try:
-                    done.add(json.loads(ln)["address"])
-                except Exception:  # noqa: BLE001
-                    pass
-        for ln in JSONL.read_text(encoding="utf-8").splitlines():
-            if ln.strip():
-                try:
-                    _bump(json.loads(ln))
-                except Exception:  # noqa: BLE001
-                    pass
+            if not ln.strip():
+                continue
+            try:
+                rec = json.loads(ln)
+            except Exception:  # noqa: BLE001
+                continue
+            if rec.get("_skip") == "error":
+                continue  # stale error records -> re-fetch on resume (never skip a master)
+            done.add(rec["address"])
+            _bump(rec)  # re-seed counters from prior successful work
     todo = [m for m in cohort if m["address"] not in done]
     print(f"already_done={len(done)} todo={len(todo)} workers={N_WORKERS} interval={MIN_INTERVAL}s")
     start = time.time()
@@ -221,7 +221,10 @@ def run(max_blowup=None, stable_ratio=STABLE_RATIO_DEFAULT):
                 rec = fut.result()
             except Exception as e:  # noqa: BLE001
                 rec = {"_skip": "error", "address": futs[fut]["address"], "err": str(e)[:120]}
-            _append(rec)
+            # Persist successes + genuine empties; DROP transient errors (429) so the
+            # next resume re-fetches them — never lose a master to a rate-limit blip.
+            if rec.get("_skip") != "error":
+                _append(rec)
             _bump(rec)
             if (i + 1) % 50 == 0:
                 _write_progress(len(cohort), start)
