@@ -277,6 +277,14 @@ fig2_outbase = os.path.join(FIGURES_DIR, "fig2_fpr_recall")
 
 methods_raw = fair["methods"]
 
+# Data-driven annotation values (keep text<->figure consistent automatically).
+_nb_hold = fair.get("n_holdout_blowup")
+_ns_hold = fair.get("n_holdout_stable")
+_det_fpr = methods_raw["detector"]["fpr"]
+_det_lead_d = methods_raw["detector"]["median_lead_days"]
+_b1_fpr = methods_raw["B1_leverage_p90"]["fpr"]
+_fpr_ratio = (_b1_fpr / _det_fpr) if _det_fpr else float("nan")
+
 methods_plot = {
     "Detector\n(mSPRT)":        methods_raw["detector"],
     "B1: Lev-p90":              methods_raw["B1_leverage_p90"],
@@ -320,12 +328,12 @@ ax_main.set_xlim(-0.01, 0.28)
 ax_main.set_ylim(-0.01, 0.70)
 ax_main.set_xlabel("False Positive Rate (stable masters)")
 ax_main.set_ylabel("Recall (blowup masters, early fire)")
-ax_main.set_title("FPR / Recall trade-off\n(held-out: 63 blowup, 63 stable)", fontsize=10.5)
+ax_main.set_title(f"FPR / Recall trade-off\n(held-out: {_nb_hold} blowup, {_ns_hold} stable)", fontsize=10.5)
 ax_main.legend(fontsize=8.5, loc="upper left", framealpha=0.8)
 
 # Annotate detector's FPR advantage
 ax_main.annotate(
-    "Lowest FPR\n(4.8%)",
+    f"Lowest FPR\n({_det_fpr * 100:.1f}%)",
     (fpr_list[0], recall_list[0]),
     xytext=(fpr_list[0] + 0.025, recall_list[0] - 0.12),
     fontsize=8.5, color="#0072B2",
@@ -389,7 +397,7 @@ ax.set_title(
 note = (
     "Source: model-free behavioral drift rule\n"
     "(leverage, loser-add, stop-attach; early-window p90/p10 threshold).\n"
-    "Not the mSPRT detector. Detector median lead = 27.9 d on its\n"
+    f"Not the mSPRT detector. Detector median lead = {_det_lead_d:.1f} d on its\n"
     "fired subset (fair_comparison_results.json)."
 )
 ax.text(
@@ -415,10 +423,27 @@ print("Fig 3 saved.")
 # ---------------------------------------------------------------------------
 fig4_outbase = os.path.join(FIGURES_DIR, "fig4_casestudy")
 
-FIG4_ADDR = "0x40c75d831744818e01c768db25aa093163d34927"
-FIG4_ADDR_DISPLAY = "Master A (0x40c7…)"
-
-m4 = next(m for m in masters if m["address"] == FIG4_ADDR)
+PREFERRED_FIG4_ADDR = "0x40c75d831744818e01c768db25aa093163d34927"
+m4 = next((m for m in masters if m["address"] == PREFERRED_FIG4_ADDR), None)
+if m4 is None:
+    # Preferred case-study master not in this cohort: auto-select a representative
+    # exposure-driven, positive-lead blow-up (clear leverage ramp before equity loss,
+    # enough buckets to show it). Pick the MEDIAN-lead case among exposure-triggered
+    # positive-lead masters — typical, not cherry-picked extreme.
+    _cands = []
+    for _m in masters:
+        if _m["label"] != "blowup" or _m["n_buckets"] < 60:
+            continue
+        _Tb, _Te, _axis = compute_model_free_lead(_m)
+        if _Tb is not None and _Te is not None and _Te > _Tb and _axis == "exposure":
+            _cands.append((_Te - _Tb, _m))
+    if _cands:
+        _cands.sort(key=lambda x: x[0])
+        m4 = _cands[len(_cands) // 2][1]
+    else:
+        m4 = max(blowup_masters, key=lambda m: m["n_buckets"])
+FIG4_ADDR = m4["address"]
+FIG4_ADDR_DISPLAY = f"Master A ({FIG4_ADDR[:6]}…)"
 series4 = m4["series"]
 n4 = len(series4)
 early_end4 = max(4, int(n4 * EARLY_FRAC))
@@ -468,6 +493,15 @@ for i in range(n4 - 1, -1, -1):
         break
 
 lead4_days = (series4[T_eq_idx4]["end_ms"] - series4[T_beh_idx4]["end_ms"]) / 3.6e6 / 24
+
+# Data-driven trigger description for figure_data.json (no hard-coded narrative).
+_lev_beh4 = series4[T_beh_idx4]["prim"]["leverage"]
+_la_beh4 = series4[T_beh_idx4]["prim"]["loser_add_count"]
+if _lev_beh4 is not None and early_lev_p90_4:
+    _fig4_trigger = (f"leverage {_lev_beh4:.2f} vs early-window p90 {early_lev_p90_4:.2f} "
+                     f"({_lev_beh4 / early_lev_p90_4:.1f}x); loser_add_count={_la_beh4}")
+else:
+    _fig4_trigger = "exposure-axis trigger (leverage > 1.5x early-window p90)"
 
 # Display window: 80 buckets before T_behavior to 60 after T_equity (or end)
 WIN_PRE  = 80
@@ -675,7 +709,7 @@ fig_data = {
         "equity_at_T_behavior_usd": round(series4[T_beh_idx4]["equity"], 2),
         "equity_at_T_equity_usd": round(series4[T_eq_idx4]["equity"], 2),
         "leverage_at_T_behavior": round(series4[T_beh_idx4]["prim"]["leverage"], 4),
-        "trigger_condition": "loser_add_count=44 AND leverage > early p90 (0.84 -> 24.60, +29x)",
+        "trigger_condition": _fig4_trigger,
     },
 }
 
