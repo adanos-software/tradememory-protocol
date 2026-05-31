@@ -39,6 +39,7 @@ Imports: stdlib + research.hyperliquid.* only. No numpy, no tradememory.owm.*.
 """
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -284,12 +285,18 @@ def render_table(rows: list[tuple[str, dict]]) -> str:
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
-def main() -> dict:
+def main(eval_split="testval", out_path=None, lock_cfg=None) -> dict:
     d = json.loads(IN.read_text())
     ms = d["masters"]
+    out_path = Path(out_path) if out_path else OUT
 
     tuning = [m for m in ms if m["split"] == "tuning"]
-    holdout = [m for m in ms if m["split"] in ("test", "val")]
+    if eval_split == "val":
+        holdout = [m for m in ms if m["split"] == "val"]
+    elif eval_split == "test":
+        holdout = [m for m in ms if m["split"] == "test"]
+    else:
+        holdout = [m for m in ms if m["split"] in ("test", "val")]
 
     tuning_blow = [m for m in tuning if m["label"] == "blowup"]
     tuning_stable = [m for m in tuning if m["label"] == "stable"]
@@ -302,6 +309,16 @@ def main() -> dict:
     cfg, grid_rows, selection_note = choose_detector_cfg(
         tuning_blow, tuning_stable, universe
     )
+    if lock_cfg is not None:
+        # Locked-test read: use the EXACT frozen operating point. Re-derive on tuning
+        # and record whether it matches (the firewall guarantee: the locked cfg was
+        # chosen with no test contact; the re-derivation MUST match it).
+        rederived = (cfg.M, cfg.kappa)
+        cfg = _make_cfg(lock_cfg[0], float(lock_cfg[1]))
+        match = (rederived == (lock_cfg[0], float(lock_cfg[1])))
+        selection_note += (f" | LOCKED cfg M={lock_cfg[0]} kappa={lock_cfg[1]} "
+                           f"(tuning re-derivation M={rederived[0]} kappa={rederived[1]}: "
+                           f"{'MATCH' if match else 'MISMATCH'})")
     chosen = {
         "M": cfg.M,
         "kappa": cfg.kappa,
@@ -338,8 +355,10 @@ def main() -> dict:
         "note": (
             "FAIR comparison: FPR (stable) / recall (blowup early) / median-lead, "
             "every method side by side. Operating point chosen on TUNING, reported "
-            "on held-out test+val. No test snooping."
+            "on the held-out eval split. No operating-point tuning on the eval split."
         ),
+        "eval_split": eval_split,
+        "locked_test_read": lock_cfg is not None,
         "n_tuning_blowup": len(tuning_blow),
         "n_tuning_stable": len(tuning_stable),
         "n_holdout_blowup": len(hold_blow),
@@ -357,9 +376,10 @@ def main() -> dict:
         "fpr_budget": _FPR_BUDGET,
         "baseline_guard_x": _BASELINE_GUARD_X,
     }
-    OUT.write_text(json.dumps(results, indent=2))
+    out_path.write_text(json.dumps(results, indent=2))
 
     # ---- console report ---------------------------------------------------
+    print(f"=== eval split: {eval_split}  (locked-test read: {lock_cfg is not None}) -> {out_path.name} ===")
     print("=== DETECTOR OPERATING POINT (chosen on TUNING) ===")
     print(f"  M={cfg.M} kappa={cfg.kappa} tau={_TAU} bucket=4h burn_in={cfg.burn_in} weights=equal")
     print(f"  {selection_note}")
@@ -383,4 +403,15 @@ def main() -> dict:
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--eval-split", choices=["val", "test", "testval"], default="testval",
+                    help="held-out split to report on. Pre-lock: val. Locked read: test.")
+    ap.add_argument("--out", default=None, help="output JSON path (default fair_comparison_results.json)")
+    ap.add_argument("--lock-cfg", default=None,
+                    help="frozen operating point 'M,kappa' for the locked-test read")
+    a = ap.parse_args()
+    lc = None
+    if a.lock_cfg:
+        parts = a.lock_cfg.split(",")
+        lc = (int(parts[0]), float(parts[1]))
+    main(eval_split=a.eval_split, out_path=a.out, lock_cfg=lc)
