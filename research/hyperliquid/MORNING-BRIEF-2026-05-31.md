@@ -2,6 +2,19 @@
 
 > 給 Sean 早上掃。Branch `copytrading-drift-demo`，全部 commit 已 push。
 
+## 🔴 重大後續更新（morning brief 寫完之後發生）
+
+昨晚的樂觀（偵測器 smoke 3/6 fire）**被完整實驗推翻了**，請以這段為準：
+- **完整 Claim A/B 實驗：偵測器贏不了笨方法**（Claim A lead −154h、Claim B AUC 0.586，都 FAIL）。
+- **model-free 檢驗：論文核心假設「行為領先淨值」只對 ~20% 爆倉成立**（57% 是突然爆，整體 median lead = 0）。
+- 我已照你「重新檢視 thesis」+「一次做完」的指示，**自主走「誠實版 reframe」**（最 defensible，你可改）：
+  - 論文重構 → `REFRAMED-PAPER-OUTLINE-2026-05-31.md`（**邊界發現**＝破迷思 + **high-precision 子類偵測**）。
+  - 偵測器其實是**高精度低召回**：fire 時提前 **median 27.7 天**、PPV 0.61、FPR 6.7%，但只覆蓋 12% 爆倉。
+  - 細節：`THESIS-REEXAMINATION-2026-05-31.md`、`PHASE5-INDICATIVE-RESULTS.md`。
+- **等你拍板**：接受誠實版 reframe（推薦），還是要更大 pivot（產品/風險情報角度）。
+
+下面是昨晚的原始 brief（樂觀版，部分已被上述修正）：
+
 ## TL;DR（30 秒）
 
 - **Plan 2（偵測器 machinery）100% 完成**：8 phases TDD，每個 implementer→spec-review→code-review，154 detector tests + 主 1474 tests 全綠，整體 final review = **SHIP-READY + data-snooping firewall PASS**。
