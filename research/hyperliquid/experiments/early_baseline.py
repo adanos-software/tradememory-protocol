@@ -1,11 +1,28 @@
-"""Early-window self-baseline builder with stability guard.
+"""Early-window self-baseline builder with a (relaxed) stability guard.
 
 ``build_early_window_baseline`` constructs a master's *self* baseline from the
 EARLIEST HEALTHY SEGMENT of its series, so that the detector z-scores later
-behavior against the master's own pre-drift normal. Masters that are already
-drifting at the start of the observation window have no such segment and are
-EXCLUDED (the stability guard — they would otherwise calibrate "normal" to an
-already-pathological state, leaking the label and defeating early detection).
+behavior against the master's own pre-drift normal.
+
+Relaxed stability guard (2026-05-31 fairness fix)
+-------------------------------------------------
+The original guard EXCLUDED any master whose healthy prefix was shorter than
+``min_healthy_buckets`` (an already-drifting master), on the grounds that its
+"normal" would be calibrated to an already-pathological state. On the real
+cohort that excluded ~47% of blowups — far too harsh, and it silently dropped
+exactly the hardest-but-most-interesting cases. We now:
+
+  * loosen the thresholds (``healthy_frac=0.80``, ``min_healthy_buckets=5``), and
+  * FALL BACK rather than exclude: when the healthy prefix is too short but the
+    series itself is long enough, build the baseline from the FIRST
+    ``min_healthy_buckets`` buckets — a short, early, best-effort baseline window.
+
+A master is now EXCLUDED only when the series is shorter than
+``min_healthy_buckets`` (genuinely too little data to baseline at all). The
+fallback is honest about its limitation (``info["fallback"] is True``): for an
+already-drifting master the short early window may itself be mildly drifting, so
+the z-scores are conservative (harder to fire), but the master is no longer
+thrown away.
 
 Healthy-segment definition (documented choice)
 ----------------------------------------------
@@ -77,11 +94,11 @@ def build_early_window_baseline(
     series: list[dict],
     universe_stats: dict,
     cfg,
-    healthy_frac: float = 0.90,
-    min_healthy_buckets: int = 10,
+    healthy_frac: float = 0.80,
+    min_healthy_buckets: int = 5,
     max_early_frac: float = 0.5,
 ):
-    """Build the early-window self-baseline (or exclude an already-drifting master).
+    """Build the early-window self-baseline (relaxed guard: fall back, rarely exclude).
 
     Parameters
     ----------
@@ -98,7 +115,10 @@ def build_early_window_baseline(
     healthy_frac : float
         A bucket is healthy iff equity >= healthy_frac * running_peak.
     min_healthy_buckets : int
-        Minimum healthy-segment length; below this the master is excluded.
+        Minimum window length. If the healthy prefix is shorter than this, fall
+        back to the first ``min_healthy_buckets`` buckets (best-effort early
+        window) rather than excluding. Exclude only if the WHOLE series is
+        shorter than this.
     max_early_frac : float
         Cap on the healthy segment as a fraction of the full series length
         (documented above): ensures the baseline stays early-window.
@@ -107,9 +127,13 @@ def build_early_window_baseline(
     -------
     (BaselineStats | None, dict)
         On success: (BaselineStats(self_stats, universe_stats),
-                     {"excluded": False, "n_healthy": int}).
+                     {"excluded": False, "fallback": bool, "n_healthy": int,
+                      "n_window": int}).
+            ``fallback`` is True when the healthy prefix was too short and the
+            first ``min_healthy_buckets`` buckets were used instead.
         On exclusion: (None,
-                     {"excluded": True, "reason": str, "n_healthy": int}).
+                     {"excluded": True, "fallback": False, "reason": str,
+                      "n_healthy": int}).
     """
     # Early-fraction cap on how far into the series the healthy segment may run.
     cap = max(min_healthy_buckets, int(math.ceil(len(series) * max_early_frac)))
@@ -135,30 +159,49 @@ def build_early_window_baseline(
             break  # first sustained drop below threshold ends the healthy prefix
 
     n_healthy = len(healthy)
-    if n_healthy < min_healthy_buckets:
+
+    if n_healthy >= min_healthy_buckets:
+        # Normal path: baseline from the healthy prefix.
+        window = healthy
+        fallback = False
+    elif len(series) >= min_healthy_buckets:
+        # Relaxed guard: the master is already drifting (short/no healthy prefix),
+        # but it has enough buckets — fall back to the first min_healthy_buckets
+        # buckets as a short, early, best-effort baseline window.
+        window = series[:min_healthy_buckets]
+        fallback = True
+    else:
+        # Genuinely too little data to baseline at all -> exclude.
         return None, {
             "excluded": True,
+            "fallback": False,
             "reason": (
-                f"healthy segment too short: {n_healthy} < "
+                f"series too short to baseline: {len(series)} < "
                 f"min_healthy_buckets={min_healthy_buckets} "
-                f"(stability guard: master appears already drifting)"
+                f"(stability guard: not enough buckets even for a fallback window)"
             ),
             "n_healthy": n_healthy,
         }
 
-    # Aggregate per-primitive self stats over the healthy segment.
+    # Aggregate per-primitive self stats over the chosen window.
+    n_window = len(window)
     self_stats: dict[str, dict[str, PrimitiveStats]] = {}
     for axis in AXES:
         self_stats[axis] = {}
         for p in PRIMITIVES[axis]:
-            vals = [b["prim"][p] for b in healthy]
+            vals = [b["prim"][p] for b in window]
             med = _median(vals)
             std = _pop_std(vals, sum(vals) / len(vals))
             self_stats[axis][p] = PrimitiveStats(
                 mean=med,
                 std=_scale(std, med),
-                n=n_healthy,
+                n=n_window,
             )
 
     baseline = BaselineStats(self_stats=self_stats, universe_stats=universe_stats)
-    return baseline, {"excluded": False, "n_healthy": n_healthy}
+    return baseline, {
+        "excluded": False,
+        "fallback": fallback,
+        "n_healthy": n_healthy,
+        "n_window": n_window,
+    }

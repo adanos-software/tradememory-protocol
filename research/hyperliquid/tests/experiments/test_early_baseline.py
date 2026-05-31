@@ -61,9 +61,12 @@ def test_healthy_then_drifting_yields_prefix_baseline():
     assert baseline.universe_stats["exposure"]["leverage"].n == 500
 
 
-def test_always_drifting_series_is_excluded():
-    """An always-drifting series (equity monotonically falling from bucket 0) has no
-    sustained healthy segment >= min_healthy_buckets -> excluded (stability guard)."""
+def test_always_drifting_long_series_falls_back_not_excluded():
+    """Relaxed guard: an always-drifting series (equity monotonically falling from
+    bucket 0) has no healthy prefix, but it is LONG enough, so it now FALLS BACK to
+    the first min_healthy_buckets buckets as a best-effort early window rather than
+    being excluded. (Original intent: an already-drifting master gets no normal
+    healthy-prefix baseline — still true; it just isn't thrown away anymore.)"""
     series = []
     eq = 100.0
     for i in range(40):
@@ -74,13 +77,22 @@ def test_always_drifting_series_is_excluded():
         series, _universe_stats(), _cfg(),
         healthy_frac=0.90, min_healthy_buckets=10,
     )
-    assert info["excluded"] is True
-    assert baseline is None
-    assert "reason" in info
+    assert info["excluded"] is False
+    assert info["fallback"] is True
+    # the very first bucket sets the peak so it counts as healthy, but the prefix
+    # dies immediately at bucket 1 -> healthy prefix far shorter than the minimum
+    assert info["n_healthy"] < 10
+    assert info["n_window"] == 10          # fell back to first min_healthy_buckets
+    assert baseline is not None
+    # baseline built from the first 10 buckets' leverage (5.0..14.0), median 9.5
+    lev = baseline.self_stats["exposure"]["leverage"]
+    assert abs(lev.mean - 9.5) < 1e-6
 
 
-def test_too_short_healthy_segment_is_excluded():
-    """Healthy prefix shorter than min_healthy_buckets -> excluded."""
+def test_too_short_healthy_segment_falls_back():
+    """Relaxed guard: a healthy prefix shorter than min_healthy_buckets in a long
+    series now FALLS BACK to the first min_healthy_buckets buckets rather than being
+    excluded."""
     series = []
     for i in range(5):
         series.append(_bucket((i + 1) * H, equity=100.0, leverage=2.0))
@@ -91,8 +103,31 @@ def test_too_short_healthy_segment_is_excluded():
         series, _universe_stats(), _cfg(),
         healthy_frac=0.90, min_healthy_buckets=10,
     )
+    assert info["excluded"] is False
+    assert info["fallback"] is True
+    assert info["n_healthy"] == 5          # healthy prefix existed but was too short
+    assert info["n_window"] == 10          # fell back to first 10 buckets
+    assert baseline is not None
+
+
+def test_series_shorter_than_min_is_excluded():
+    """Stability guard still fires for the genuine exclusion case: when the WHOLE
+    series is shorter than min_healthy_buckets there is not even enough data for a
+    fallback window, so the master is excluded."""
+    series = []
+    eq = 100.0
+    for i in range(4):                     # only 4 buckets, min_healthy_buckets=5
+        eq *= 0.85
+        series.append(_bucket((i + 1) * H, equity=eq, leverage=5.0 + i))
+
+    baseline, info = build_early_window_baseline(
+        series, _universe_stats(), _cfg(),
+        healthy_frac=0.90, min_healthy_buckets=5,
+    )
     assert info["excluded"] is True
+    assert info["fallback"] is False
     assert baseline is None
+    assert "reason" in info
 
 
 def test_std_scale_floor_for_constant_primitive():
