@@ -57,8 +57,15 @@ Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector par
 >     in most real buckets → MAD=0 → z-scores explode → type_i≈1. Patched with std-based scale in the
 >     scaled run; Plan 3 must decide the proper transform (log1p / rate / z-clip) before locking.
 > (e) **Behavioral baseline availability** — the 10k-fill cap × T0=2025-06-01 means high-freq masters
->     have NO pre-T0 fill baseline (`meets_baseline` failed for all 140 fetched). DECISION NEEDED (affects
->     pre-reg): later T₀ / early-window baseline / equity-derived proxies / accept low-freq-biased cohort.
+>     have NO pre-T0 fill baseline (`meets_baseline` failed for all 140 fetched). **DECIDED 2026-05-31 (Sean):
+>     EARLY-WINDOW baseline.** Use each master's earliest in-observation segment (still-healthy period) as its
+>     self-baseline, with a STABILITY GUARD: baseline buckets must sit at equity ≥ 90% of running peak AND
+>     before any sustained drift; masters already drifting at window start are flagged + excluded from the
+>     early-baseline cohort (reported as a named line). This keeps the full idiosyncratic cohort incl.
+>     high-freq masters; T₀/window stay unchanged (pre-reg Part 1 untouched). The standard guard band
+>     (70% peak + pre-first-liquidation) still gates which alerts count as "early", so the baseline segment
+>     and the counted-alert region are separated. Reviewer rebuttal: report the baseline-segment length, the
+>     fraction excluded by the stability guard, and a robustness rerun with baseline length ∈ {short, long}.
 > (f) **Nested order structure** — real `historicalOrders` nest under "order"; `order_events` fixed to
 >     handle both (mock flat + real nested). 154 tests green.
 > Indicative real-data smoke: frozen detector fired on 3/6 idiosyncratic blow-up masters, carrying axis
