@@ -54,7 +54,7 @@ A common, rarely-tested assumption behind copy-trading risk controls is that
 \emph{before} the equity damage that wipes out followers. We test this on real
 on-chain money using the public Hyperliquid perpetual-futures API. On a
 model-free panel of 93 idiosyncratic blow-up masters, behavior leads equity for
-only 18 ($\approx$20\%); 57\% blow up with no gradual behavioral signal at all,
+only 22 ($\approx$24\%); 53\% blow up with no gradual behavioral signal at all,
 and the overall median lead is \emph{zero hours}. Behavioral early warning is
 therefore not a general solution---most blow-ups are sudden. Yet a specific
 subclass, gradual leverage build-up, admits a usable high-precision alarm. In a
@@ -114,8 +114,8 @@ and for whom, behavior actually leads equity.
 \paragraph{Our contribution is deliberately two-sided.}
 \begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
   \item \textbf{A boundary (the headline negative).} On 93 real idiosyncratic
-        blow-up masters, behavioral drift leads equity for only $\approx$20\%;
-        57\% are sudden; the overall median lead is 0 hours. The popular
+        blow-up masters, behavioral drift leads equity for only $\approx$24\%;
+        53\% are sudden; the overall median lead is 0 hours. The popular
         ``behavioral monitoring catches blow-ups'' assumption is false as a general
         law---including in our own earlier framing of this project.
   \item \textbf{A usable signal (the positive).} Within the gradual-leverage
@@ -370,14 +370,14 @@ loser-adding, stop-rate down), and $T_{\text{equity}}$, the first drop below 90\
 peak. The lead is $T_{\text{equity}} - T_{\text{behavior}}$.
 
 The result is sobering and is the paper's headline negative
-(Figure~\ref{fig:boundary}). Behavior leads equity for only \textbf{18 of 93
-($\approx$20\%)} masters. Fully \textbf{57\% blow up with no gradual behavioral
+(Figure~\ref{fig:boundary}). Behavior leads equity for only \textbf{22 of 93
+($\approx$24\%)} masters. Fully \textbf{53\% blow up with no gradual behavioral
 signal at all}---they are sudden: one outsized trade, a gap, or a master who was
 aggressive throughout with no ``drift'' to detect. The \textbf{overall median lead
-is 0 hours}: behavior and equity move together, not in sequence. Only within the
-behavior-leads subset is there real runway---there the median lead is
-$\approx$\textbf{200 hours ($\approx$8 days)}, and it is almost entirely an exposure
-phenomenon (\textbf{15 of 18} are carried by the leverage axis).
+is 0 hours} (0.83 days): behavior and equity move together, not in sequence. Only
+within the behavior-leads subset is there real runway---there the median lead is
+$\approx$\textbf{9.6 days} (IQR 7.2--18.8 d), and it is almost entirely an exposure
+phenomenon (\textbf{21 of 22} are carried by the leverage axis).
 
 \begin{figure}[t]
   \centering
@@ -385,9 +385,9 @@ phenomenon (\textbf{15 of 18} are carried by the leverage axis).
   \caption{\textbf{The boundary (Claim 1).} Distribution of the behavior-minus-equity
   lead across 93 real idiosyncratic blow-up masters (model-free, no detector). The
   mass at and below zero shows that behavioral drift does \emph{not} generally
-  precede equity damage: only $\approx$20\% have a positive lead, 57\% show no
-  gradual behavioral signal, and the overall median lead is 0\,h. The right tail is
-  the gradual-leverage subclass ($\approx$8-day median lead) that the detector
+  precede equity damage: only $\approx$24\% have a positive lead (22 of 93), 53\% show
+  no gradual behavioral signal, and the overall median lead is $\approx$0\,d. The right
+  tail is the gradual-leverage subclass ($\approx$9.6-day median lead) that the detector
   targets.}
   \label{fig:boundary}
 \end{figure}
@@ -491,7 +491,7 @@ blow-ups that drift at all.
 \label{sec:mechanism}
 
 Which axis carries the signal? Almost entirely \textbf{exposure}. In the model-free
-boundary analysis, 15 of the 18 behavior-leads masters are driven by the leverage
+boundary analysis, 21 of the 22 behavior-leads masters are driven by the leverage
 axis; in the detector, removing discipline and tilt costs little lead-time, whereas
 removing exposure collapses it. On-chain, the discipline axis (stop-attach,
 reduce-only) and the tilt axis (margin top-ups, loser-adding) add little
@@ -586,8 +586,8 @@ window to span more independent crash-days would raise the effective sample size
 
 We tested, on real on-chain money, the assumption that behavioral monitoring
 catches copy-trading blow-ups. It does not, in general: on 93 idiosyncratic
-blow-up masters, behavior leads equity for only $\approx$20\%, 57\% are sudden, and
-the overall median lead is zero. That is the boundary. But within a specific
+blow-up masters, behavior leads equity for only $\approx$24\% (22 of 93), 53\% are
+sudden, and the overall median lead is $\approx$0 days. That is the boundary. But within a specific
 gradual-leverage subclass, a three-axis mixture-SPRT detector delivers a
 high-precision, long-lead alarm---a false-positive rate of 0.048 (lowest by
 $\approx 4\times$), a strict win over a leverage tripwire at matched recall, and a

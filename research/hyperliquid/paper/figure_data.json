@@ -54,7 +54,14 @@
       46.667,
       104.333,
       117.667
-    ]
+    ],
+    "exposure_share": {
+      "description": "Among the behavior-leads masters (positive lead), how many were triggered by the exposure axis (leverage or loser_add+leverage) vs discipline (stop_attach_rate only)",
+      "n_exposure_triggered": 21,
+      "n_discipline_triggered": 1,
+      "n_behavior_leads_total": 22,
+      "pct_exposure": 95.5
+    }
   },
   "fig2_fpr_recall": {
     "description": "FPR / recall scatter, held-out comparison",

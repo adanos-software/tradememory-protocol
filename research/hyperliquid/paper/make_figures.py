@@ -104,7 +104,7 @@ def _percentile(xs, p):
 
 def compute_model_free_lead(m):
     """
-    Compute (T_behavior_ms, T_equity_ms) for one blowup master.
+    Compute (T_behavior_ms, T_equity_ms, trigger_axis) for one blowup master.
 
     T_behavior: first bucket *after* the early 20% window where:
         - leverage > 1.5 * early-window p90 leverage, OR
@@ -113,7 +113,11 @@ def compute_model_free_lead(m):
 
     T_equity: first bucket where equity < 0.90 * running peak
 
-    Returns (T_behavior_ms or None, T_equity_ms or None).
+    trigger_axis: "exposure" if the first-firing condition is cond_lev or cond_loser_lev
+                  "discipline" if the first-firing condition is cond_sar only
+                  None if T_behavior is None
+
+    Returns (T_behavior_ms or None, T_equity_ms or None, trigger_axis or None).
     """
     series = m["series"]
     n = len(series)
@@ -122,7 +126,7 @@ def compute_model_free_lead(m):
 
     levs = [b["prim"]["leverage"] for b in early if b["prim"]["leverage"] is not None]
     if not levs:
-        return None, None
+        return None, None, None
     early_lev_p90 = _percentile(levs, 90)
 
     sars = [b["prim"]["stop_attach_rate"] for b in early if b["prim"]["stop_attach_rate"] is not None]
@@ -130,6 +134,7 @@ def compute_model_free_lead(m):
 
     # T_behavior
     T_behavior_ms = None
+    trigger_axis = None
     for i in range(early_end, n):
         b = series[i]
         lev = b["prim"]["leverage"]
@@ -148,6 +153,11 @@ def compute_model_free_lead(m):
 
         if cond_lev or cond_loser_lev or cond_sar:
             T_behavior_ms = b["end_ms"]
+            # Classify axis: exposure takes priority when both fire simultaneously
+            if cond_lev or cond_loser_lev:
+                trigger_axis = "exposure"
+            else:
+                trigger_axis = "discipline"
             break
 
     # T_equity
@@ -163,7 +173,7 @@ def compute_model_free_lead(m):
             T_equity_ms = b["end_ms"]
             break
 
-    return T_behavior_ms, T_equity_ms
+    return T_behavior_ms, T_equity_ms, trigger_axis
 
 
 # Compute for all blowup masters with n_buckets >= 20
@@ -171,15 +181,17 @@ blowup_masters = [m for m in masters if m["label"] == "blowup" and m["n_buckets"
 n_blowup_ge20 = len(blowup_masters)
 
 leads_days = []   # lead in days where both T_behavior and T_equity are found
+leads_axes = []   # trigger axis ("exposure" or "discipline") parallel to leads_days
 n_no_behavior = 0
 
 for m in blowup_masters:
-    T_b, T_e = compute_model_free_lead(m)
+    T_b, T_e, axis = compute_model_free_lead(m)
     if T_b is None:
         n_no_behavior += 1
     elif T_e is not None:
         lead_h = (T_e - T_b) / 3.6e6
         leads_days.append(lead_h / 24.0)
+        leads_axes.append(axis)
 
 n_both_measurable = len(leads_days)
 n_behavior_leads = sum(1 for d in leads_days if d > 0)
@@ -187,10 +199,18 @@ pct_behavior_leads = 100.0 * n_behavior_leads / n_both_measurable if n_both_meas
 pct_sudden = 100.0 * n_no_behavior / n_blowup_ge20
 median_lead = statistics.median(leads_days) if leads_days else 0.0
 
+# Axis breakdown for the positive-lead (behavior-leads) subset
+positive_lead_axes = [ax for d, ax in zip(leads_days, leads_axes) if d > 0]
+n_exposure_leads = sum(1 for ax in positive_lead_axes if ax == "exposure")
+n_discipline_leads = sum(1 for ax in positive_lead_axes if ax == "discipline")
+pct_exposure_leads = 100.0 * n_exposure_leads / n_behavior_leads if n_behavior_leads else 0
+
 print(f"\nFig 1 stats:")
 print(f"  n_blowup_ge20={n_blowup_ge20}, n_no_behavior={n_no_behavior} ({pct_sudden:.1f}%)")
 print(f"  n_both_measurable={n_both_measurable}, n_behavior_leads={n_behavior_leads}")
 print(f"  pct_behavior_leads={pct_behavior_leads:.1f}%, median_lead={median_lead:.2f}d")
+print(f"  exposure-triggered leads: {n_exposure_leads}/{n_behavior_leads} ({pct_exposure_leads:.1f}%)")
+print(f"  discipline-triggered leads: {n_discipline_leads}/{n_behavior_leads}")
 
 # ---------------------------------------------------------------------------
 # Fig 1 — Boundary: behavior vs equity lead histogram
@@ -586,6 +606,13 @@ fig_data = {
         "pct_behavior_leads": round(pct_behavior_leads, 1),
         "median_lead_days": round(median_lead, 2),
         "all_leads_days": [round(d, 3) for d in sorted(leads_days)],
+        "exposure_share": {
+            "description": "Among the behavior-leads masters (positive lead), how many were triggered by the exposure axis (leverage or loser_add+leverage) vs discipline (stop_attach_rate only)",
+            "n_exposure_triggered": n_exposure_leads,
+            "n_discipline_triggered": n_discipline_leads,
+            "n_behavior_leads_total": n_behavior_leads,
+            "pct_exposure": round(pct_exposure_leads, 1),
+        },
     },
     "fig2_fpr_recall": {
         "description": "FPR / recall scatter, held-out comparison",
