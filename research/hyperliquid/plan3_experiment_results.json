@@ -1,0 +1,41 @@
+{
+  "scaled_provisional": true,
+  "note": "INDICATIVE \u2014 scaled cohort + default cfg, NOT the pre-reg locked-test read",
+  "n_tuning": 73,
+  "n_holdout": 126,
+  "n_holdout_blowup": 63,
+  "claim_A": {
+    "median_advantage": -154.2255825,
+    "ci_low": -437.41069847222224,
+    "ci_high": 0.0,
+    "n_masters": 63,
+    "n_events": 31,
+    "passed": false
+  },
+  "claim_B": {
+    "auc": 0.5860418241370622,
+    "auc_ci_low": 0.5100125156445557,
+    "auc_ci_high": 0.6616666666666666,
+    "fpr": 0.047619047619047616,
+    "ppv": 0.75,
+    "n_blowup": 63,
+    "n_stable": 63,
+    "confusion": {
+      "tp": 9,
+      "fp": 3,
+      "fn": 54,
+      "tn": 60
+    },
+    "passed": false
+  },
+  "ablation": {
+    "full_median_lead": 0.0,
+    "disc_median_lead": 0.0,
+    "lead_ratio": null,
+    "disc_ci_low": 0.0,
+    "disc_ci_high": 0.0,
+    "n_masters": 63,
+    "n_events": 31
+  },
+  "ablation_50pct_bar": null
+}
