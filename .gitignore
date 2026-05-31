@@ -102,3 +102,9 @@ tradememory-protocol
 
 scripts/research/output/
 research/hyperliquid/_archive/
+
+# Hyperliquid full-universe run — large/regenerable data artifacts
+research/hyperliquid/leaderboard_raw.json
+research/hyperliquid/cohort_stage1_full.jsonl
+research/hyperliquid/cohort_stage1_scaled.json
+research/hyperliquid/cohort_behavioral.json
