@@ -1,0 +1,654 @@
+% =====================================================================
+%  The Limits of Behavioral Early Warning for Copy-Trading Blow-Ups
+%  arXiv: q-fin.TR
+%  Single author: Syuan Wei Peng (Sean Peng), Mnemox AI
+%
+%  Standard article class + only arXiv-safe packages.
+%  Compile:  pdflatex main ; bibtex main ; pdflatex main ; pdflatex main
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+
+% --- lightweight helpers (no exotic packages) -------------------------
+\newcommand{\fpr}{\mathrm{FPR}}
+\newcommand{\Tnull}{T_{0}}
+\captionsetup{font=small,labelfont=bf}
+
+\title{\bfseries The Limits of Behavioral Early Warning for\\
+Copy-Trading Blow-Ups: A High-Precision, Low-Recall Detector\\
+and the Blow-Ups It Cannot See\\[4pt]
+\large Evidence from On-Chain Perpetual Futures (Hyperliquid)}
+
+\author{Syuan Wei Peng (Sean Peng)\thanks{Mnemox AI. Correspondence:
+\texttt{sean@mnemox.ai}. The author thanks Yijia Xiao (UCLA) for the arXiv
+endorsement. This is an exploratory, observational study on a scaled cohort;
+it is \emph{not} a confirmatory read of a pre-registered locked test set, which
+is reserved for future work (Section~\ref{sec:discussion}).}\\
+Mnemox AI}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% =====================================================================
+\begin{abstract}
+% ~200 words
+A common, rarely-tested assumption behind copy-trading risk controls is that
+``behavioral monitoring catches blow-ups'': that a master trader's conduct drifts
+\emph{before} the equity damage that wipes out followers. We test this on real
+on-chain money using the public Hyperliquid perpetual-futures API. On a
+model-free panel of 93 idiosyncratic blow-up masters, behavior leads equity for
+only 18 ($\approx$20\%); 57\% blow up with no gradual behavioral signal at all,
+and the overall median lead is \emph{zero hours}. Behavioral early warning is
+therefore not a general solution---most blow-ups are sudden. Yet a specific
+subclass, gradual leverage build-up, admits a usable high-precision alarm. In a
+fair held-out comparison (63 blow-up / 63 stable; operating point chosen on a
+disjoint tuning split, reported with no test snooping), a three-axis
+mixture-SPRT detector achieves a false-positive rate of 0.048 at recall 0.238
+with a median lead of 27.9 days---the \emph{lowest} FPR by roughly $4\times$, and
+a strict win over a leverage-tripwire baseline at matched recall (0.048 vs.\
+0.175). The lead is carried almost entirely by the exposure (leverage) axis.
+We report both sides honestly: recall is low ($\approx$24\%, useless for the
+$\approx$76\% of blow-ups that are sudden), the cohort is scaled and indicative,
+and the gradual-leverage subclass is currently defined post hoc.
+\end{abstract}
+
+\medskip
+\noindent\textbf{Keywords:} copy trading; behavioral drift; early warning;
+sequential testing; mixture SPRT; perpetual futures; on-chain risk; Hyperliquid.
+
+\medskip
+\noindent\textbf{JEL / arXiv:} q-fin.TR (Trading and Market Microstructure);
+G11, G23, G41.
+
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Copy trading and social trading let retail followers mirror a ``master'' trader's
+positions automatically. The arrangement industrializes a single account's risk:
+when a master blows up, every follower blows up with them, on the same candle.
+Regulators have repeatedly flagged this contagion channel and the asymmetry of
+information it creates---a follower sees a headline return and a leaderboard rank,
+not the master's moment-to-moment risk-taking
+\citep{iosco2020socialtrading,esma2021finfluencers,pelster2019socialtrading}.
+The implicit promise of every ``risk score'' and ``copy-stop'' product layered on
+top is that \emph{watching how the master trades} gives an earlier, cleaner warning
+than watching the equity curve alone.
+
+That promise rests on a load-bearing empirical assumption that is almost never
+tested adversarially on real adversarial data: \textbf{behavioral drift precedes
+the equity damage.} If a master's conduct degrades gradually---creeping leverage,
+abandoned stops, averaging into losers---before the account craters, then a
+behavioral monitor buys followers lead-time the equity itself cannot. If instead
+most blow-ups are \emph{sudden}---one oversized trade, a gap, or a master who was
+always reckless and simply got unlucky---then there is no behavioral runway to
+detect, and a plain equity threshold is both simpler and earlier.
+
+We put this assumption on real on-chain money. Hyperliquid is a high-volume
+decentralized perpetual-futures venue whose public \texttt{info} API exposes, with
+no authentication, every fill, order, and ledger event for any address, plus a
+coarse account-value history \citep{hyperliquid2024docs}. This is an unusually
+honest laboratory: positions and liquidations are settled on-chain, the
+leaderboard is public, and there is no survivorship curation by a broker. We
+freeze a leaderboard universe at a fixed date, label blow-ups by a forward-only
+equity rule, and ask---first model-free, then with a purpose-built detector---when,
+and for whom, behavior actually leads equity.
+
+\paragraph{Our contribution is deliberately two-sided.}
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+  \item \textbf{A boundary (the headline negative).} On 93 real idiosyncratic
+        blow-up masters, behavioral drift leads equity for only $\approx$20\%;
+        57\% are sudden; the overall median lead is 0 hours. The popular
+        ``behavioral monitoring catches blow-ups'' assumption is false as a general
+        law---including in our own earlier framing of this project.
+  \item \textbf{A usable signal (the positive).} Within the gradual-leverage
+        subclass, a three-axis mixture-SPRT detector gives a \emph{high-precision},
+        long-lead alarm: in a fair held-out comparison it has the lowest
+        false-positive rate by $\approx 4\times$ (0.048) and strictly dominates a
+        leverage tripwire at matched recall. It does \emph{not} win on recall---it
+        covers only the $\approx$24\% of blow-ups that actually drift.
+  \item \textbf{A mechanism.} The lead is carried almost entirely by the exposure
+        (leverage) axis; on-chain discipline and tilt signals add little.
+\end{enumerate}
+
+We are explicit about epistemic status. This is an \emph{exploratory,
+observational} study on a \emph{scaled} cohort with an \emph{indicative} operating
+point. It is not the confirmatory, pre-registered, locked-test read that the same
+machinery is built for; that run, and a causal (rather than post-hoc) definition
+of the gradual-leverage subclass, are future work (Section~\ref{sec:discussion}).
+Honesty about where behavioral early warning works \emph{and} where it does not is
+the point of the paper, not a caveat to it.
+
+% =====================================================================
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Copy / social trading and its risks.}
+Social-trading platforms have been studied mostly from the follower's behavioral
+side---herding, the disposition effect amplified by visible reputation, and the
+hazards of mirroring leveraged strategies
+\citep{pelster2019socialtrading,barber2000trading}. Supervisory bodies have issued
+explicit warnings about copy trading and ``finfluencer''-driven retail
+participation, stressing the information asymmetry between the copied master and
+the copier \citep{iosco2020socialtrading,esma2021finfluencers}. Commercial copy
+desks operationalize this with proprietary ``risk scores'' and automatic
+copy-stops; the canonical example is a forex copy-trading risk guard that monitors
+a master and can pause copying. Such systems are typically closed, forex-centric,
+and---critically---unvalidated in public against the alternative of simply watching
+equity. Our detector targets the same job (drift / behavioral risk intelligence for
+a broker or copy desk) but is vendor-neutral, on-chain, and reported with its
+false-positive rate alongside its lead-time.
+
+\paragraph{Changepoint and statistical process control.}
+Detecting a shift in a stream is classical. The cumulative sum (CUSUM) chart and
+its SPC relatives detect a step change in a monitored statistic
+\citep{page1954cusum,montgomery2009spc}; Bayesian Online Changepoint Detection
+(BOCPD) maintains a run-length posterior \citep{adams2007bocpd}. Our per-axis test
+is a sequential probability ratio test \citep{wald1945sprt} in its mixture form
+(mSPRT), which is ``always valid''---it controls error under continuous monitoring
+and optional stopping, exactly the peeking problem that arises when an alarm is
+checked every bucket \citep{johari2017peeking}. We compose three axes with a
+Holm correction \citep{holm1979simple} and shrink each axis's self-baseline toward
+a universe prior in James--Stein fashion \citep{james1961stein}.
+
+\paragraph{Behavioral / concept drift.}
+``Drift'' in a trader is a special case of concept drift---the statistical
+properties of a stream changing over time \citep{gama2014concept}. The
+machine-learning literature emphasizes detecting and adapting to drift; we instead
+ask the prior question of whether a financially-meaningful drift even exists ahead
+of the outcome it is supposed to predict.
+
+\paragraph{Equity thresholds vs.\ behavioral detectors: reframed.}
+In earlier internal work on self-monitoring trading agents we found that a simple
+maximum-drawdown stop on the equity curve outperformed a CUSUM behavioral detector
+for cutting losses---a result mirrored in the drawdown-control literature
+\citep{magdon2004maxdd}. We previously read this as a defeat for behavioral
+methods. The present study reframes it correctly: \emph{equity-threshold methods
+win in general because most blow-ups are sudden} (Section~\ref{sec:results}). When
+the damage arrives without a gradual behavioral antecedent, nothing beats reading
+the damage directly. Behavioral detectors can only add value in the gradual
+subclass---and we show that, there, they buy both precision and lead-time. The
+negative result and the positive result are two faces of one coin.
+
+\paragraph{Methodological hygiene.}
+Performance studies in finance are notoriously fragile to survivorship bias
+\citep{brown1991survivorship}, multiple testing and backtest overfitting
+\citep{harvey2015backtesting}, and clustered dependence. We address these with a
+frozen-at-$\Tnull$ universe (no survival filter), a strict tuning/test split with
+the operating point chosen off the test data, and event-clustered bootstrap
+inference \citep{efron1986bootstrap,cameron2008clusterboot} that resamples
+crash-days rather than masters.
+
+% =====================================================================
+\section{Data}
+\label{sec:data}
+
+\paragraph{Source.}
+All data come from the public Hyperliquid \texttt{info} API
+\citep{hyperliquid2024docs}, which requires no authentication: per-address fills
+(\texttt{userFills}, carrying a \texttt{liquidation} flag), orders
+(\texttt{historicalOrders}, including trigger / reduce-only metadata), ledger
+updates (\texttt{userNonFundingLedgerUpdates}, including margin top-ups and
+withdrawals), and a coarse account-value history (\texttt{portfolio}). Requests are
+throttled ($\geq 0.4$\,s spacing) with retry on rate-limit, and raw responses are
+archived for reproducibility (Appendix~\ref{app:repro}).
+
+\paragraph{Frozen universe.}
+To kill survivorship bias we freeze the universe at $\Tnull = $ 2025-06-01 UTC and
+look forward to a window end of 2026-04-30 UTC ($\approx$11 months). The universe
+is a leaderboard snapshot filtered to addresses with a pre-$\Tnull$ peak perpetual
+account value $\geq \$25{,}000$ (a ``master worth copying'' floor that removes
+dust) and at least two pre-$\Tnull$ equity points. Selection uses \emph{only}
+information available at $\Tnull$; no outcome (survival) filter is applied. The
+scaled sample analyzed here comprises 1{,}206 masters.
+
+\paragraph{Labeling (forward-only).}
+A master is labeled a blow-up by an equity-only, forward-only rule
+(Appendix~\ref{app:rule}): a peak-to-trough drawdown exceeding 70\% with no
+recovery to 80\% of the prior peak within 30 days, \emph{or} a first on-chain
+liquidation fill, whichever comes first. The rule never looks past the trigger
+time, so a label cannot leak future information into the detection window. To
+separate genuine losses from withdrawals we require, for the equity-threshold path,
+that the cumulative-PnL drop be at least half the equity drop across the crater
+(the median ratio in scoping was 0.92, so most craters already qualify).
+
+\paragraph{Idiosyncratic vs.\ market-event blow-ups.}
+A market-wide dump synchronizes many masters on the same UTC day; such days are not
+``predict the blow-up'' events but common-shock events. We tag a UTC day as a
+\emph{market-event} day when $\geq 3\%$ of the active universe craters on it, and
+separate those blow-ups from idiosyncratic ones. In the scaled run this yields
+\textbf{443 idiosyncratic blow-ups across 49 independent crash-days}, with the
+market-event days (notably 2025-06-04 and 2025-06-11) tagged and held out of the
+idiosyncratic analysis. The effective sample size for inference is the number of
+independent crash-day clusters, not the raw blow-up count---hence the
+event-clustered statistics in Section~\ref{sec:method}.
+
+\paragraph{Behavioral sub-cohort.}
+Equity labeling needs one cheap call per address; the full behavioral trajectory
+(fills, orders, ledger) is expensive, so we pull it only for a labeled sub-cohort.
+This \emph{behavioral sub-cohort} has \textbf{199 masters (95 blow-up / 104
+stable)} with complete trajectories. The held-out fair comparison in
+Section~\ref{sec:results} uses a balanced 63 blow-up / 63 stable subset of this
+cohort, disjoint from the tuning split.
+
+\paragraph{The 10k-fill-cap selection line.}
+Hyperliquid's fill history is capped at the most recent $\approx$10{,}000 fills per
+address. For very high-frequency masters this window does not reach back to
+$\Tnull$, so a pre-$\Tnull$ behavioral baseline cannot be built from fills. Rather
+than drop these masters (which would bias toward low-frequency traders---a
+disclosed selection effect), we estimate each master's baseline from its
+\emph{earliest in-observation healthy segment} (Section~\ref{sec:method}). We name
+this line explicitly because it biases the baseline toward the in-window early
+period and we report the fraction affected.
+
+\paragraph{Ethics and pseudonymization.}
+All addresses are public pseudonymous on-chain identifiers; no personal identity is
+collected, inferred, or published. We report only aggregate statistics; the single
+case study (Section~\ref{sec:mechanism}) uses a de-identified trajectory and is
+excluded from all inferential claims. No trading is performed and no capital is at
+risk; the study is purely observational on already-public ledger data.
+
+% =====================================================================
+\section{Method}
+\label{sec:method}
+
+\subsection{Three orthogonal behavioral axes}
+We summarize a master's order flow on three volatility-normalized axes, each chosen
+so that a deteriorating master moves it in a known sign:
+\begin{description}[leftmargin=1.6em,itemsep=2pt]
+  \item[Exposure ($\uparrow$ is worse).] Leverage, notional growth, and trade
+        size-in-sigma (size scaled by the realized volatility of the traded
+        instrument). Captures gradual over-leveraging.
+  \item[Discipline ($\downarrow$ is worse).] Stop-attach rate, reduce-only rate,
+        and holding time. Captures the abandonment of risk controls.
+  \item[Tilt ($\uparrow$ is worse).] Margin top-ups, adding-into-losers, and
+        trade-rate spikes. Captures emotional / revenge trading.
+\end{description}
+Each raw primitive is computed per time bucket (4-hour buckets in the reported
+configuration) from the trajectory.
+
+\subsection{Early-window self-baseline with shrinkage}
+Because the fill cap denies many masters a pre-$\Tnull$ baseline
+(Section~\ref{sec:data}), each axis is $z$-scored against an \emph{early-window
+self-baseline}: the master's first $\approx$20\% in-observation buckets, restricted
+to a still-healthy regime (equity $\geq 90\%$ of running peak and before sustained
+drift). Masters already drifting at window start have no clean baseline and are
+flagged; the early-baseline robustness is the subject of a stability accounting we
+report below. To stabilize small-sample baselines we shrink each master's
+per-axis location toward a tuning-split universe distribution by James--Stein
+shrinkage \citep{james1961stein} with intensity $\kappa$.
+
+\subsection{Per-axis mixture-SPRT and composite alarm}
+On each axis we run a one-sided mixture sequential probability ratio test
+\citep{wald1945sprt,johari2017peeking} in the deterioration direction, with
+per-axis level $\alpha = 0.01$. The mSPRT is ``always valid'': checking it every
+bucket does not inflate the error rate, which is essential because an alarm is, by
+construction, monitored continuously \citep{johari2017peeking}. The composite alarm
+is a Holm-corrected \citep{holm1979simple} min-gate across the three axes,
+\emph{sustained} for $M$ consecutive buckets:
+\begin{equation}
+\text{alarm}_t \;=\; \mathbf{1}\!\left[
+\text{Holm}\!\big(p^{\text{exp}}_t, p^{\text{disc}}_t, p^{\text{tilt}}_t\big)
+\text{ rejects for } M \text{ consecutive buckets}\right].
+\end{equation}
+
+\subsection{Guard band (anti-label-leakage)}
+Exposure and tilt are mechanically coupled to equity, so an ``early'' alarm fired
+\emph{after} the damage has begun would be a self-fulfilling label leak. We
+therefore impose a guard band: an alarm counts as a genuine early warning only
+while equity $\geq 70\%$ of the running peak \emph{and} strictly before the first
+liquidation fill. The baseline-estimation segment (earliest healthy buckets) and
+the counted-alert region (up to 70\%-of-peak / first liquidation) are thereby
+separated in time.
+
+\subsection{Baselines}
+We compare against three non-trivial early tripwires, all run under the
+\emph{same} guard band so the comparison is apples-to-apples:
+\begin{description}[leftmargin=1.6em,itemsep=2pt]
+  \item[B1 --- leverage-p90 tripwire.] Fire when leverage exceeds the master's own
+        90th percentile.
+  \item[B2 --- drawdown-velocity.] Fire on accelerating drawdown velocity.
+  \item[B3 --- leverage-up-and-add.] Fire when leverage rises while the master adds
+        into a losing position.
+\end{description}
+The central methodological point: \textbf{comparing lead-time without also
+reporting FPR is meaningless when a baseline near-always-fires.} A tripwire that
+alerts on essentially every master will trivially ``lead'' every blow-up by a long
+margin while being useless in deployment. We therefore report, for every method,
+the full triple $(\fpr,\ \text{recall},\ \text{lead})$ on the stable and blow-up
+cohorts jointly.
+
+\subsection{Operating-point selection (no test snooping)}
+The detector has free knobs (sustain $M$, shrinkage $\kappa$, threshold $\tau$,
+bucket size). We choose the operating point \emph{only} on the tuning split: among
+grid points with tuning-split stable-FPR $\leq 0.10$ we take the highest-recall
+configuration, breaking ties by the longest tuning lead. This selects
+$M=2$, $\kappa=7$, $\tau=0.3$, 4-hour buckets, 20-bucket burn-in
+(Appendix~\ref{app:op}). Every number reported in Section~\ref{sec:results} is then
+computed on the held-out test+validation cohort, which was never used to pick the
+operating point. We stress that $\kappa$ is effectively inert in the present run
+because the self-baseline and the universe prior are nearly identical on-chain
+(Section~\ref{sec:discussion}); it is retained for the future run where the two
+distributions genuinely differ.
+
+\subsection{Event-clustered inference}
+Blow-ups cluster in time: a handful of crash-days produce many of them, so masters
+are not independent observations. All confidence statements resample the
+\emph{crash-day clusters} (not the masters), with 5{,}000 bootstrap replicates
+\citep{efron1986bootstrap,cameron2008clusterboot}, and we report the effective
+number of independent clusters as the true power unit. Leave-one-event-out
+robustness is computed analogously.
+
+% =====================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Claim 1 --- the boundary: behavior does not generally lead equity}
+\label{sec:boundary}
+
+We first test the load-bearing assumption \emph{model-free}, with no detector. For
+each of 93 real idiosyncratic blow-up masters we mark $T_{\text{behavior}}$, the
+first clear degradation versus the master's own early-window baseline (leverage up,
+loser-adding, stop-rate down), and $T_{\text{equity}}$, the first drop below 90\% of
+peak. The lead is $T_{\text{equity}} - T_{\text{behavior}}$.
+
+The result is sobering and is the paper's headline negative
+(Figure~\ref{fig:boundary}). Behavior leads equity for only \textbf{18 of 93
+($\approx$20\%)} masters. Fully \textbf{57\% blow up with no gradual behavioral
+signal at all}---they are sudden: one outsized trade, a gap, or a master who was
+aggressive throughout with no ``drift'' to detect. The \textbf{overall median lead
+is 0 hours}: behavior and equity move together, not in sequence. Only within the
+behavior-leads subset is there real runway---there the median lead is
+$\approx$\textbf{200 hours ($\approx$8 days)}, and it is almost entirely an exposure
+phenomenon (\textbf{15 of 18} are carried by the leverage axis).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\linewidth]{fig1_boundary.pdf}
+  \caption{\textbf{The boundary (Claim 1).} Distribution of the behavior-minus-equity
+  lead across 93 real idiosyncratic blow-up masters (model-free, no detector). The
+  mass at and below zero shows that behavioral drift does \emph{not} generally
+  precede equity damage: only $\approx$20\% have a positive lead, 57\% show no
+  gradual behavioral signal, and the overall median lead is 0\,h. The right tail is
+  the gradual-leverage subclass ($\approx$8-day median lead) that the detector
+  targets.}
+  \label{fig:boundary}
+\end{figure}
+
+The implication is unambiguous: \emph{behavioral monitoring is not a general
+early-warning solution for copy-trading blow-ups.} A behavioral detector that
+assumes gradual, sustained drift cannot help with the majority of blow-ups, and a
+plain equity threshold will fire as early or earlier on the sudden ones. This is
+the boundary; the rest of the paper lives inside it.
+
+\subsection{Claim 2 --- a high-precision detector for the gradual subclass}
+\label{sec:fair}
+
+Inside the gradual-drift subclass, the picture is positive. We run the fair
+held-out comparison---63 blow-up / 63 stable masters, every method under the same
+guard band, the detector at its tuning-chosen operating point ($M=2$, $\kappa=7$,
+$\tau=0.3$, 4-hour buckets)---and report the full $(\fpr,\ \text{recall},\
+\text{lead})$ triple for each method in Table~\ref{tab:fair} and
+Figure~\ref{fig:fpr}.
+
+\begin{table}[t]
+  \centering
+  \caption{\textbf{Fair held-out comparison (Claim 2).} 63 blow-up / 63 stable
+  masters; operating point chosen on a disjoint tuning split and reported here
+  with no test snooping. FPR is measured on stable masters; recall is the fraction
+  of blow-ups with a guard-banded early alarm; lead is the median time from alarm
+  to crater among caught blow-ups. The detector has the lowest FPR by
+  $\approx 4\times$; at recall matched to B1 (both 0.238) it strictly wins on FPR
+  (0.048 vs.\ 0.175). The baselines' longer ``leads'' are a fire-on-everything
+  artifact---they alert on $\approx$22\% of \emph{stable} masters.}
+  \label{tab:fair}
+  \begin{tabular}{@{}lccccc@{}}
+    \toprule
+    Method & FPR $\downarrow$ & Recall $\uparrow$ & Median lead & FP / 63 & Note \\
+    \midrule
+    \textbf{Detector (mSPRT, 3-axis)} & \textbf{0.048} & 0.238 & \textbf{27.9 d} & 3 & lowest FPR ($\approx 4\times$) \\
+    B1 \;leverage-p90 tripwire        & 0.175 & 0.238 & 84 d  & 11 & same recall, $3.6\times$ FPR \\
+    B2 \;drawdown-velocity            & 0.222 & 0.365 & 70 d  & 14 & buys recall by firing widely \\
+    B3 \;leverage-up-and-add          & 0.222 & 0.556 & 46 d  & 14 & buys recall by firing widely \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{fig2_fpr_recall.pdf}
+  \caption{\textbf{Fair comparison in FPR--recall space (Claim 2).} Each method is a
+  point; lower-right is better. The detector sits at the far left (FPR 0.048): it is
+  the precision-favoring tool. B1 shares the detector's recall (0.238) but at
+  $3.6\times$ the FPR; B2/B3 buy higher recall only by alerting on $\approx$22\% of
+  stable masters. Reading lead-time without this axis (Table~\ref{tab:fair}) would
+  reward the fire-on-everything baselines for an artifact.}
+  \label{fig:fpr}
+\end{figure}
+
+Three readings follow.
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+  \item \textbf{Lowest FPR by $\approx 4\times$.} The detector false-alarms on 3 of
+        63 stable masters ($\fpr = 0.048$) versus 11--14 for the baselines
+        ($\fpr = 0.175$--$0.222$). For a broker, FPR is the cost of wrongly freezing
+        or flagging a \emph{profitable} master; the detector pays that cost roughly
+        four times less often.
+  \item \textbf{Strict win at matched recall.} Against B1, which has identical
+        recall (0.238), the detector strictly dominates on FPR (0.048 vs.\ 0.175).
+        At the same hit rate it raises a quarter as many false alarms.
+  \item \textbf{The baselines' ``leads'' are an artifact.} B2 and B3 post longer
+        median leads (70 d, 46 d) and higher recall (0.365, 0.556), but only by
+        firing on $\approx$22\% of stable masters---i.e.\ near-always-firing.
+        Lead-time without FPR rewards exactly this pathology; with FPR shown, the
+        artifact is visible.
+\end{enumerate}
+
+We are equally clear about what the detector does \emph{not} do: it does
+\textbf{not} win on recall. Its 0.238 recall reflects that it covers only the
+$\approx$24\% gradual-drift subset of blow-ups. For the sudden majority it is silent
+by design---consistent with, and explained by, the Claim 1 boundary.
+
+\subsection{Claim 2 (continued) --- lead-time distribution}
+\label{sec:leadtime}
+
+Among the blow-ups the detector does catch, the warning is long. The median lead is
+\textbf{27.9 days} (669 hours), with a wide right-skewed spread
+(Figure~\ref{fig:lead})---some masters drift for months of slow over-leveraging
+before the crater. This is the deployable value proposition for the gradual
+subclass: when the detector speaks, it speaks weeks early, and (Section~\ref{sec:fair})
+it rarely speaks wrongly. The honest gloss is coverage, not timeliness: the
+distribution in Figure~\ref{fig:lead} is conditioned on the $\approx$24\% of
+blow-ups that drift at all.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{fig3_leadtime.pdf}
+  \caption{\textbf{Lead-time distribution (Claim 2).} Time from the detector's
+  guard-banded alarm to the crater, over caught idiosyncratic blow-ups. Median
+  $\approx$27.9 days, right-skewed. The mass is long-lead, but conditioned on the
+  gradual-drift subset the detector covers---it is silent on the sudden majority.}
+  \label{fig:lead}
+\end{figure}
+
+\subsection{Claim 3 --- the mechanism is leverage}
+\label{sec:mechanism}
+
+Which axis carries the signal? Almost entirely \textbf{exposure}. In the model-free
+boundary analysis, 15 of the 18 behavior-leads masters are driven by the leverage
+axis; in the detector, removing discipline and tilt costs little lead-time, whereas
+removing exposure collapses it. On-chain, the discipline axis (stop-attach,
+reduce-only) and the tilt axis (margin top-ups, loser-adding) add little
+independent early signal---plausibly because clean stop / reduce-only metadata is
+sparse and noisy in public fills, and because over-leveraging is the dominant,
+most-measurable failure mode.
+
+Figure~\ref{fig:case} shows this in one de-identified master: leverage ramps for
+days while equity is still comfortably above its peak, the detector fires inside the
+guard band, and only later does the equity curve crater. A leverage-dynamics-only
+detector captures most of the available signal---a simpler model that matches the
+data and reinforces the Claim 1 finding that the gradual subclass is, concretely, a
+\emph{gradual-leverage} subclass.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\linewidth]{fig4_casestudy.pdf}
+  \caption{\textbf{Mechanism, one case (Claim 3).} A single de-identified blow-up
+  master: leverage (exposure axis) ramps well before equity leaves its healthy band;
+  the detector's guard-banded alarm fires during the still-healthy period; the equity
+  crater follows. Illustrative only---excluded from all inferential claims.}
+  \label{fig:case}
+\end{figure}
+
+% =====================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{The negative and the positive are the same coin.}
+Equity thresholds win in general (Section~\ref{sec:related}) \emph{because} most
+blow-ups are sudden (Claim 1). Behavioral detection can only add value where a
+gradual antecedent exists, and there (Claim 2) it adds both precision and weeks of
+lead-time. Our earlier reading---``drawdown stops beat behavioral CUSUM, so
+behavioral methods lose''---was an incomplete inference from a sample dominated by
+sudden events. The correct statement is conditional: \emph{outside} the gradual
+subclass, watch the equity; \emph{inside} it, a behavioral detector is the
+precision tool.
+
+\paragraph{Broker / copy-desk deployment.}
+The natural use is not a stand-alone predictor but a low-FPR overlay for a copy desk
+or broker risk API. The 4.8\% false-positive rate is the load-bearing property: a
+risk control that frequently freezes profitable masters destroys the product, so a
+detector that false-alarms $\approx 4\times$ less than the obvious tripwires is
+directly valuable even at modest recall. Operationally it should be paired with a
+plain equity / drawdown stop that catches the sudden majority; the behavioral layer
+exists to buy lead-time on the gradual-leverage subclass that the equity stop can
+only catch late.
+
+\paragraph{Honest limitations.}
+We foreground these because they bound every claim above.
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt]
+  \item \textbf{Low recall ($\approx$24\%).} The detector is useless for the
+        $\approx$76\% of blow-ups that are sudden. It is a niche instrument, not a
+        general copy-trading safety net, and must not be sold as one.
+  \item \textbf{Scaled cohort, indicative operating point.} These are exploratory
+        numbers on a scaled sample with an operating point chosen on a tuning split.
+        They are \emph{not} a confirmatory read of a pre-registered locked test set;
+        the universe, labeling, and detector form are pre-specified, but the final
+        locked-test read is reserved for future work.
+  \item \textbf{Post-hoc subclass = circularity.} The ``gradual-leverage subclass''
+        is currently identified from observed drift, then shown to be detectable by a
+        drift detector---a circularity. The fix, which we flag as the central piece of
+        future work, is a \emph{causal, pre-registered} definition of the subclass
+        (e.g.\ a leverage-trajectory criterion fixed before the outcome is read) so
+        that ``the detector catches the gradual subclass'' is a falsifiable
+        prediction rather than a tautology.
+  \item \textbf{$\kappa$ inert under self $\approx$ universe.} Because on-chain
+        masters' self-baselines and the universe prior are nearly identical, the
+        shrinkage intensity $\kappa$ does almost nothing in this run; its value here
+        carries no signal. A run with genuinely distinct self and universe
+        distributions is needed to calibrate it meaningfully.
+  \item \textbf{On-chain measurement noise.} Discipline and tilt rely on stop /
+        reduce-only / top-up metadata that is sparse and partly opaque in public
+        fills; the near-total dominance of the exposure axis may partly reflect this
+        rather than a pure behavioral truth.
+  \item \textbf{Single venue, single window.} Hyperliquid, $\Tnull = $ 2025-06-01 to
+        2026-04-30. Generalization to other venues, asset classes, and regimes is
+        untested.
+\end{itemize}
+
+\paragraph{Future work.}
+The same machinery supports the confirmatory study this paper is honest about not
+being: a causal pre-registered definition of the gradual-leverage subclass, the
+full-universe run, and a locked-test read of Claims 1--3 with the operating point
+and all gates frozen by commit hash before the test set is touched. Extending the
+window to span more independent crash-days would raise the effective sample size
+(the true power unit), and cross-venue replication would test external validity.
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We tested, on real on-chain money, the assumption that behavioral monitoring
+catches copy-trading blow-ups. It does not, in general: on 93 idiosyncratic
+blow-up masters, behavior leads equity for only $\approx$20\%, 57\% are sudden, and
+the overall median lead is zero. That is the boundary. But within a specific
+gradual-leverage subclass, a three-axis mixture-SPRT detector delivers a
+high-precision, long-lead alarm---a false-positive rate of 0.048 (lowest by
+$\approx 4\times$), a strict win over a leverage tripwire at matched recall, and a
+median lead of 27.9 days---with the signal carried almost entirely by the exposure
+axis. The honest cost is coverage: recall is $\approx$24\%, the cohort is scaled and
+indicative, and the subclass is for now defined post hoc. The contribution is a
+truthful map of where behavioral early warning works and where it cannot---a
+low-FPR overlay for the gradual-leverage subclass, paired with an equity stop for
+the sudden majority---rather than a flashy claim that the data do not support.
+
+% =====================================================================
+\appendix
+\section{Reproducibility}
+\label{app:repro}
+
+All inputs are public and unauthenticated. We use the Hyperliquid \texttt{info}
+endpoint \citep{hyperliquid2024docs} for fills, orders, ledger updates, and the
+\texttt{portfolio} account-value history, and the public leaderboard snapshot for
+the universe. The fetcher throttles to $\geq 0.4$\,s between calls with retry on
+HTTP-429, and raw JSON responses are archived so the cohort can be rebuilt without
+re-querying. The detector (per-trade primitives $\to$ bucket-close per-axis
+observations $\to$ per-axis mSPRT $\to$ Holm min-gate, sustained-$M$ composite $\to$
+70\%-peak / pre-first-liquidation guard band), the baselines B1--B3, the early-window
+baseline with stability guard, and the event-clustered bootstrap are released as
+code alongside this paper. The cohort definition (universe filter, $\Tnull$, window,
+labeling rule, market-event tag) and the detector form are pre-specified;
+the operating point is chosen on the tuning split only (Appendix~\ref{app:op}).
+
+\section{The forward-only blow-up rule}
+\label{app:rule}
+
+A master is labeled a blow-up at the earliest time $t$ satisfying either:
+(i) a peak-to-trough drawdown from the running pre-$t$ equity peak exceeding 70\%,
+with no subsequent recovery to 80\% of that peak within 30 days; or
+(ii) the first on-chain liquidation fill. The rule is evaluated forward only---it
+uses no information after $t$---so a label cannot leak into the detection window.
+For genuine-loss filtering on the equity path we additionally require the
+cumulative-PnL drop across the crater to be at least half the equity drop, removing
+withdrawals masquerading as losses. Robustness reruns vary the drawdown threshold
+over $\{0.50, 0.70, 0.85\}$.
+
+\section{Operating-point selection procedure}
+\label{app:op}
+
+The detector grid varies sustain $M \in \{2,3,4\}$ and shrinkage
+$\kappa \in \{7,14\}$ at fixed $\tau = 0.3$, 4-hour buckets, and a 20-bucket
+burn-in. On the \emph{tuning} split only (32 blow-up / 41 stable) we retain grid
+points with tuning stable-FPR $\leq 0.10$, select the highest-recall configuration,
+and break ties by the longest tuning lead. This yields the reported operating point
+$M=2$, $\kappa=7$. The held-out evaluation cohort (63 blow-up / 63 stable) is never
+used in this selection; all Section~\ref{sec:results} numbers are computed on it.
+Under this operating point the held-out blow-up cohort splits into 40 with a clean
+early-window baseline and 23 falling back to the relaxed baseline, with none
+excluded outright---the relaxed stability guard converts the previously high
+exclusion rate into a reported fallback rather than dropped masters. As noted in
+Section~\ref{sec:method}, $\kappa$ is effectively inert here because the self and
+universe distributions nearly coincide on-chain; it is retained for the future run
+in which they differ.
+
+% =====================================================================
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
