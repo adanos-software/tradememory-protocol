@@ -35,6 +35,25 @@ The lead is carried almost entirely by the **exposure axis**; discipline and til
 on-chain. A leverage-dynamics-only detector captures most of the signal — simpler model,
 matches the data.
 
+## Fair comparison (2026-05-31 re-run — operating point chosen on tuning, reported on held-out)
+
+The Phase-5 "detector loses by −154h" was an UNFAIR artifact (baselines near-always-fire).
+With FPR shown alongside lead (held-out 63 blowup / 63 stable, detector cfg M=2/kappa=7 chosen
+on tuning), the honest picture:
+
+| method | FPR | recall | median lead | note |
+|---|---|---|---|---|
+| **detector** | **0.048** | 0.238 | 27.9d | lowest FPR by ~4× |
+| B1 lev-p90 | 0.175 | 0.238 | 84d | same recall, 3.6× the FPR → detector strictly wins at equal recall |
+| B2 dd-velocity | 0.222 | 0.365 | 70d | buys recall by firing on 22% of stable (inflated lead) |
+| B3 lev-up+add | 0.222 | 0.556 | 46d | buys recall by firing on 22% of stable (inflated lead) |
+
+**Verdict:** the detector is the precision-favoring tool — at matched recall it strictly beats
+the baselines on FPR; the baselines' longer "leads" are a fire-on-everything artifact made
+visible. It does NOT win on recall (24% — the gradual-drift subset). So: low-FPR / low-recall
+/ moderate-lead, a clean niche, not a general early detector. (Stability guard relaxed →
+exclusion 38–41% → 0%.)
+
 ## Why this is a strong paper despite the negative core
 - **Honesty as contribution**: a pre-registered, real-data refutation of a popular assumption
   is publishable and citable (esp. q-fin.TR / risk). Most "behavioral monitoring" claims are
