@@ -52,13 +52,13 @@ Mnemox AI}
 A common, rarely-tested assumption behind copy-trading risk controls is that
 ``behavioral monitoring catches blow-ups'': that a master trader's conduct drifts
 \emph{before} the equity damage that wipes out followers. We test this on real
-on-chain money over the \emph{full} public Hyperliquid leaderboard---37{,}895
+on-chain money over the \emph{full} public Hyperliquid leaderboard: 37{,}895
 addresses, filtered to 10{,}395 ``master-worth-copying'' accounts, yielding
 \textbf{2{,}621 genuine loss-driven idiosyncratic blow-ups} across 48 independent
 crash-days. On a model-free panel of 2{,}477 blow-up masters, behavioral drift
 leads equity for only \textbf{9\%} (216 masters); \textbf{69\% blow up with no
 gradual behavioral signal at all}, and the overall median lead is \emph{negative}
-($-8$ days)---when conduct moves, it typically \emph{lags} the equity rather than
+($-8$ days): when conduct moves, it typically \emph{lags} the equity rather than
 leading it. A purpose-built three-axis mixture-SPRT detector, pre-registered with
 its operating point frozen on a disjoint tuning split and read once against a
 sealed test set, confirms the boundary rather than beating it: it achieves
@@ -66,9 +66,9 @@ sealed test set, confirms the boundary rather than beating it: it achieves
 lowest false-positive rate of any method ($0.040$, $\approx\!1.9\times$ below a
 leverage tripwire), but at negligible recall that precision is of little practical
 use. Behavioral early warning is therefore \emph{not} a viable general safety net
-for copy-trading blow-ups: most are sudden, a plain equity / drawdown stop
-dominates, and the residual behavioral signal---gradual over-leveraging---precedes
-fewer than one blow-up in ten.
+for copy-trading blow-ups: most are sudden, a plain equity / drawdown stop fires
+as early on them, and the residual behavioral signal (gradual over-leveraging)
+precedes fewer than one blow-up in ten.
 \end{abstract}
 
 \medskip
@@ -105,15 +105,16 @@ detect, and a plain equity threshold is both simpler and earlier.
 
 We put this assumption on real on-chain money. Hyperliquid is a high-volume
 decentralized perpetual-futures venue whose public \texttt{info} API exposes, with
-no authentication, every fill, order, and ledger event for any address, plus a
-coarse account-value history \citep{hyperliquid2024docs}. This is an unusually
-honest laboratory: positions and liquidations are settled on-chain, the
+no authentication, the recent fill, order, and ledger history for any address
+(subject to an $\approx$10{,}000-fill cap we return to in Section~\ref{sec:data}),
+plus a coarse account-value history \citep{hyperliquid2024docs}. This is an unusually
+transparent setting: positions and liquidations are settled on-chain, the
 leaderboard is public, and there is no survivorship curation by a broker. We
 freeze a leaderboard universe at a fixed date, label blow-ups by a forward-only
 equity rule, and ask---first model-free, then with a purpose-built detector---when,
 and for whom, behavior actually leads equity.
 
-\paragraph{Our contribution is a clean negative.}
+\paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
   \item \textbf{The boundary (the headline).} On 2{,}477 real idiosyncratic
         blow-up masters, behavioral drift leads equity for only $\approx$9\%; 69\%
@@ -158,9 +159,9 @@ explicit warnings about copy trading and ``finfluencer''-driven retail
 participation, stressing the information asymmetry between the copied master and
 the copier \citep{iosco2025imitative,esma2023copytrading}. Commercial copy
 desks operationalize this with proprietary ``risk scores'' and automatic
-copy-stops; the canonical example is a forex copy-trading risk guard that monitors
+copy-stops; a representative class is the forex copy-trading risk guards that monitor
 a master and can pause copying. Such systems are typically closed, forex-centric,
-and---critically---unvalidated in public against the alternative of simply watching
+and, critically, unvalidated in public against the alternative of simply watching
 equity. Our detector targets the same job (drift / behavioral risk intelligence for
 a broker or copy desk) but is vendor-neutral, on-chain, and reported with its
 false-positive rate alongside its lead-time.
@@ -187,8 +188,8 @@ of the outcome it is supposed to predict.
 \paragraph{Equity thresholds vs.\ behavioral detectors: reframed.}
 In earlier internal work on self-monitoring trading agents we found that a simple
 maximum-drawdown stop on the equity curve outperformed a CUSUM behavioral detector
-for cutting losses---a result mirrored in the drawdown-control literature
-\citep{magdon2004maxdd}. We previously read this as a defeat for behavioral
+for cutting losses, consistent with the treatment of drawdown as a primary risk
+measure \citep{magdon2004maxdd}. We previously read this as a defeat for behavioral
 methods. The present study reframes it correctly: \emph{equity-threshold methods
 win in general because most blow-ups are sudden} (Section~\ref{sec:results}). When
 the damage arrives without a gradual behavioral antecedent, nothing beats reading
@@ -204,7 +205,8 @@ Performance studies in finance are notoriously fragile to survivorship bias
 \citep{brown1991survivorship}, multiple testing and backtest overfitting
 \citep{harvey2015backtesting}, and clustered dependence. We address these with a
 frozen-at-$\Tnull$ universe (no survival filter), a strict tuning/test split with
-the operating point chosen off the test data, and event-clustered bootstrap
+the operating point chosen on the tuning split only---before the sealed test data
+were read---and event-clustered bootstrap
 inference \citep{efron1986bootstrap,cameron2008clusterboot} that resamples
 crash-days rather than masters.
 
@@ -229,7 +231,7 @@ is a leaderboard snapshot filtered to addresses with a pre-$\Tnull$ peak perpetu
 account value $\geq \$25{,}000$ (a ``master worth copying'' floor that removes
 dust) and at least two pre-$\Tnull$ equity points. Selection uses \emph{only}
 information available at $\Tnull$; no outcome (survival) filter is applied. We
-process the \emph{entire} leaderboard---37{,}895 addresses---and retain the
+process the \emph{entire} leaderboard (37{,}895 addresses) and retain the
 \textbf{10{,}395} that clear the floor. Crucially, the filter is on the
 \emph{pre-}$\Tnull$ \emph{peak}, not on the current account value: masters who have
 since blown up below \$25k are kept rather than silently dropped, which is the
@@ -249,13 +251,17 @@ account-death, whenever it occurs. (An earlier scoping pass at a later $\Tnull$ 
 found most craters already loss-confirmed; that does not hold at our frozen date,
 which is why the filter is enforced \emph{inside} the labeler rather than as an
 afterthought.) Among the retained blow-ups the median loss-to-equity ratio is
-$1.0$. The rule never looks past the trigger time, so a label cannot leak future
-information into the detection window.
+$1.0$. The labeling looks forward only to \emph{confirm} a crater (the 30-day
+recovery and loss-confirmation checks); the labeled trigger time itself is the crater
+onset, and because the detector is evaluated only strictly \emph{before} that time
+under the guard band (Section~\ref{sec:method}), no label information leaks into the
+detection window.
 
 \paragraph{Idiosyncratic vs.\ market-event blow-ups.}
 A market-wide dump synchronizes many masters on the same UTC day; such days are not
 ``predict the blow-up'' events but common-shock events. We tag a UTC day as a
-\emph{market-event} day when $\geq 3\%$ of the active universe craters on it, and
+\emph{market-event} day when at least $3\%$ of the \emph{active} universe---masters
+with an equity observation in the surrounding window---craters on that day, and
 separate those blow-ups from idiosyncratic ones. This yields \textbf{2{,}621
 idiosyncratic blow-ups across 48 independent crash-days}, with the market-event
 days (2025-06-04, 2025-06-11, 2025-10-15) tagged and held out of the idiosyncratic
@@ -270,8 +276,12 @@ This \emph{behavioral sub-cohort} comprises \textbf{3{,}455 masters (2{,}482
 blow-up / 973 stable)}: the idiosyncratic blow-ups whose complete behavioral
 trajectory could be fetched within the rate-limited collection window (2{,}482 of
 the 2{,}621 labeled; the remainder timed out against the fill-history cap and the
-API throttle), plus a seed-fixed matched stable sample, each with a full trajectory.
-An address-hashed split assigns 1{,}405 masters to tuning, 656 to validation, and a
+API throttle), plus a seed-fixed (address-hashed) sample of stable masters; the
+resulting cohort is blow-up-heavy (2{,}482 blow-up / 973 stable, not a balanced
+design). We do not balance the classes: FPR is reported on stable masters and recall
+on blow-ups separately, with a rank-based AUC that is insensitive to the class ratio.
+An address-hashed split assigns 1{,}405 masters to tuning, 656 to a validation split
+used only for pre-lock development checks (it reports no numbers here), and a
 \emph{sealed} test set of 1{,}394 (990 blow-up / 404 stable). The operating point is chosen on the tuning split
 alone; all Section~\ref{sec:results} numbers are computed on the sealed test set,
 read exactly once after the detector was frozen (Appendix~\ref{app:op}).
@@ -288,9 +298,8 @@ period and we report the fraction affected.
 
 \paragraph{Ethics and pseudonymization.}
 All addresses are public pseudonymous on-chain identifiers; no personal identity is
-collected, inferred, or published. We report only aggregate statistics; the single
-case study (Section~\ref{sec:mechanism}) uses a de-identified trajectory and is
-excluded from all inferential claims. No trading is performed and no capital is at
+collected, inferred, or published. We report only aggregate statistics and present
+no address-level case study. No trading is performed and no capital is at
 risk; the study is purely observational on already-public ledger data.
 
 % =====================================================================
@@ -315,18 +324,21 @@ configuration) from the trajectory.
 \subsection{Early-window self-baseline with shrinkage}
 Because the fill cap denies many masters a pre-$\Tnull$ baseline
 (Section~\ref{sec:data}), each axis is $z$-scored against an \emph{early-window
-self-baseline}: the master's first $\approx$20\% in-observation buckets, restricted
-to a still-healthy regime (equity $\geq 90\%$ of running peak and before sustained
-drift). Masters already drifting at window start have no clean baseline and are
-flagged; the early-baseline robustness is the subject of a stability accounting we
-report below. To stabilize small-sample baselines we shrink each master's
-per-axis location toward a tuning-split universe distribution by James--Stein
-shrinkage \citep{james1961stein} with intensity $\kappa$.
+self-baseline}: the master's earliest contiguous \emph{healthy} prefix---the run of
+buckets with equity $\geq 80\%$ of the running peak, ending at the first sustained
+drop and capped at half the series. Both the running peak and the drop are computed
+online from the prefix, so the baseline uses no future information. Masters with too
+short a healthy prefix fall back to a short best-effort early window rather than being
+excluded; we report this stability accounting below. To stabilize small-sample
+baselines we shrink each master's per-axis location toward a tuning-split universe
+distribution by James--Stein shrinkage \citep{james1961stein} with intensity $\kappa$.
 
 \subsection{Per-axis mixture-SPRT and composite alarm}
 On each axis we run a one-sided mixture sequential probability ratio test
 \citep{wald1945sprt,johari2017peeking} in the deterioration direction, with
-per-axis level $\alpha = 0.01$. The mSPRT is ``always valid'': checking it every
+per-axis level $\alpha = 0.01$ and a per-axis mixing scale $\tau$---the scale of the
+mSPRT's mixing distribution over the drift effect size ($\tau = 0.3$ in the reported
+configuration). The mSPRT is ``always valid'': checking it every
 bucket does not inflate the error rate, which is essential because an alarm is, by
 construction, monitored continuously \citep{johari2017peeking}. The composite alarm
 is a Holm-corrected \citep{holm1979simple} min-gate across the three axes,
@@ -342,9 +354,10 @@ Exposure and tilt are mechanically coupled to equity, so an ``early'' alarm fire
 \emph{after} the damage has begun would be a self-fulfilling label leak. We
 therefore impose a guard band: an alarm counts as a genuine early warning only
 while equity $\geq 70\%$ of the running peak \emph{and} strictly before the first
-liquidation fill. The baseline-estimation segment (earliest healthy buckets) and
-the counted-alert region (up to 70\%-of-peak / first liquidation) are thereby
-separated in time.
+liquidation fill. Because alarms are scored only \emph{after} the burn-in baseline
+window, the baseline-estimation segment (the earliest healthy buckets) and the
+counted-alert region (after burn-in, up to 70\%-of-peak / first liquidation) do not
+overlap in time.
 
 \subsection{Baselines}
 We compare against three non-trivial early tripwires, all run under the
@@ -364,11 +377,12 @@ the full triple $(\fpr,\ \text{recall},\ \text{lead})$ on the stable and blow-up
 cohorts jointly.
 
 \subsection{Operating-point selection (no test snooping)}
-The detector has free knobs (sustain $M$, shrinkage $\kappa$, threshold $\tau$,
-bucket size). We choose the operating point \emph{only} on the tuning split: among
-grid points with tuning-split stable-FPR $\leq 0.10$ we take the highest-recall
-configuration, breaking ties by the longest tuning lead. This selects
-$M=3$, $\kappa=7$, $\tau=0.3$, 4-hour buckets, 20-bucket burn-in
+We grid-search only two knobs on the tuning split---sustain $M \in \{2,3,4\}$ and
+shrinkage $\kappa \in \{7,14\}$---holding the mixing scale $\tau=0.3$, 4-hour buckets,
+and a 20-bucket burn-in fixed a priori. Among grid points with tuning-split stable-FPR
+$\leq 0.10$ we take the highest-recall configuration, breaking ties by the longest
+tuning lead. This selects $M=3$, $\kappa=7$ (with the fixed $\tau$, bucket size, and
+burn-in)
 (Appendix~\ref{app:op}), which---together with the detector form and the claim
 gates---was frozen in a timestamped commit \emph{before} the sealed test split was
 read. Every number in Section~\ref{sec:results} is then computed on that sealed
@@ -379,9 +393,11 @@ because the self-baseline and the universe prior nearly coincide on-chain
 \subsection{Event-clustered inference}
 Blow-ups cluster in time: a handful of crash-days produce many of them, so masters
 are not independent observations. All confidence statements resample the
-\emph{crash-day clusters} (not the masters), with 5{,}000 bootstrap replicates
-\citep{efron1986bootstrap,cameron2008clusterboot}, and we report the effective
-number of independent clusters as the true power unit. Leave-one-event-out
+\emph{crash-day clusters} (not the masters) with 5{,}000 bootstrap replicates
+\citep{efron1986bootstrap,cameron2008clusterboot}; in the blow-up-versus-stable AUC,
+blow-ups are resampled by crash-day cluster and each stable master as its own
+singleton cluster. We report the effective number of independent clusters as the true
+power unit. Leave-one-event-out
 robustness is computed analogously.
 
 % =====================================================================
@@ -393,17 +409,22 @@ robustness is computed analogously.
 
 We first test the load-bearing assumption \emph{model-free}, with no detector. For
 each of 2{,}477 real idiosyncratic blow-up masters (those with $\geq$20 behavioral
-buckets) we mark $T_{\text{behavior}}$, the first clear degradation versus the
-master's own early-window baseline (leverage up, loser-adding, stop-rate down), and
-$T_{\text{equity}}$, the first drop below 90\% of peak. The lead is
-$T_{\text{equity}} - T_{\text{behavior}}$.
+buckets; 5 of the 2{,}482 fetched blow-ups fall short and drop from this panel) we
+mark $T_{\text{behavior}}$, the first bucket after the early-window
+baseline at which behavior clearly degrades---operationally, leverage exceeding
+$1.5\times$ the baseline's 90th-percentile leverage, \emph{or} leverage above that
+90th percentile while the master adds to a losing position, \emph{or} the stop-attach
+rate falling below the baseline's 10th percentile---and $T_{\text{equity}}$, the first
+bucket where equity falls below 90\% of its running peak. The lead is
+$T_{\text{equity}} - T_{\text{behavior}}$ (positive when behavior leads); a master
+with no such degradation has no $T_{\text{behavior}}$ and counts as \emph{sudden}.
 
 The result is the paper's headline negative (Figure~\ref{fig:boundary}). Behavior
 leads equity for only \textbf{216 of 2{,}477 ($\approx$9\%)} masters. Fully
 \textbf{69\% blow up with no gradual behavioral signal at all}---they are sudden:
 one outsized trade, a gap, or a master who was aggressive throughout with no
-``drift'' to detect. Over the cases where both timestamps exist, the median lead is
-\emph{negative} (\textbf{$-8$ days}): when behavior moves at all, it more often
+``drift'' to detect. Over the 762 cases where both timestamps exist, the median lead
+is \emph{negative} (\textbf{$-8$ days}): when behavior moves at all, it more often
 \emph{lags} the equity than leads it. Only in the minority right tail is there real
 runway---there the median lead is $\approx$\textbf{13 days} (IQR 7.3--24.5\,d), and
 it is almost entirely an exposure phenomenon (\textbf{215 of 216} are carried by the
@@ -413,17 +434,20 @@ leverage axis, not discipline or tilt).
   \centering
   \includegraphics[width=0.82\linewidth]{fig1_boundary.pdf}
   \caption{\textbf{The boundary (Claim 1).} Distribution of the behavior-minus-equity
-  lead over the 762 of 2{,}477 idiosyncratic blow-up masters for which both timestamps
-  are measurable (model-free, no detector); the remaining 1{,}706 show no gradual
-  behavioral signal and cannot be placed on this axis. The mass at and below zero shows
-  that behavioral drift does \emph{not} generally precede equity damage: only
-  $\approx$9\% of all blow-ups have a positive lead (216 of 2{,}477), 69\% are sudden,
-  and the median lead over the measurable cases is \emph{negative} ($\approx-8$\,d).
-  The thin right tail is the gradual-leverage minority ($\approx$13-day median lead).}
+  lead over the 762 of 2{,}477 idiosyncratic blow-up masters with both a
+  behavioral-degradation signal and a measurable equity crossing (model-free, no
+  detector). A further 1{,}706 (69\%) show no behavioral signal at all---the
+  \emph{sudden} blow-ups, which cannot be placed on this axis---and 9 have a signal but
+  no equity crossing within the fill-capped behavioral window and are omitted
+  ($762+1{,}706+9 = 2{,}477$). The mass at
+  and below zero shows that behavioral drift does \emph{not} generally precede equity
+  damage: 216 of all 2{,}477 (9\%) have a positive lead, and the median over the
+  measurable cases is \emph{negative} ($\approx-8$\,d). The thin right tail is the
+  gradual-leverage minority ($\approx$13-day median lead).}
   \label{fig:boundary}
 \end{figure}
 
-The implication is unambiguous: \emph{behavioral monitoring is not a general
+The boundary is clear: \emph{behavioral monitoring is not a general
 early-warning solution for copy-trading blow-ups.} A behavioral detector that
 assumes gradual, sustained drift cannot help with the majority of blow-ups, and a
 plain equity threshold will fire as early or earlier on the sudden ones. This is
@@ -437,8 +461,9 @@ does not. On the sealed test set (990 blow-up / 404 stable), with every method u
 the same guard band and the detector at its frozen operating point ($M=3$,
 $\kappa=7$, $\tau=0.3$, 4-hour buckets), the three-axis mixture-SPRT achieves
 \emph{chance-level} discrimination: its continuous drift-evidence score separates
-blow-up from stable masters with $\mathrm{AUC}=0.49$ (event-clustered 95\% CI lower
-bound $0.47$), and as a binary alarm it fires early on only $2\%$ of blow-ups. The
+blow-up from stable masters with $\mathrm{AUC}=0.49$ (event-clustered 95\% CI
+$[0.47,\,0.51]$, straddling the $0.5$ chance line), and as a binary alarm it fires
+early on only $2\%$ of blow-ups. The
 full $(\fpr,\ \text{recall},\ \text{lead})$ triple for each method is in
 Table~\ref{tab:fair} and Figure~\ref{fig:fpr}.
 
@@ -472,7 +497,7 @@ Table~\ref{tab:fair} and Figure~\ref{fig:fpr}.
   \centering
   \includegraphics[width=0.72\linewidth]{fig2_fpr_recall.pdf}
   \caption{\textbf{Fair comparison in FPR--recall space (Claim 2).} Each method is a
-  point; lower-right is better. The detector sits at the far left (FPR 0.040) but
+  point; the top-left corner (low FPR, high recall) is best. The detector sits at the far left (FPR 0.040) but
   near the floor (recall 0.021): the lowest false-alarm rate, almost no coverage,
   and AUC at chance. B1 buys $\approx 5\times$ the recall at $\approx 1.9\times$ the
   FPR; B2/B3 buy more recall only by alerting on 17--23\% of stable masters. Reading
@@ -490,7 +515,7 @@ Three readings follow.
         is silent on essentially every blow-up that matters.
   \item \textbf{Chance-level discrimination.} The continuous drift-evidence score
         ranks blow-up above stable masters no better than a coin
-        ($\mathrm{AUC}=0.49$, event-clustered CI lower bound $0.47$). The behavioral
+        ($\mathrm{AUC}=0.49$, 95\% CI $[0.47,\,0.51]$). The behavioral
         signal does not separate the two populations---the pre-registered
         confirmation of Claim 1.
   \item \textbf{The baselines' ``leads'' are an artifact.} B2 and B3 post longer
@@ -499,10 +524,11 @@ Three readings follow.
         exactly this pathology; with FPR shown, the artifact is plain.
 \end{enumerate}
 
-The conclusion is blunt: the detector does \textbf{not} discriminate. Its $2\%$
-recall and chance-level AUC make it silent on essentially all blow-ups, and the one
-property it owns---a low false-positive rate---is worthless without coverage. This
-is the Claim-1 boundary, confirmed by the very machinery built to beat it.
+Taken together, the detector does \textbf{not} discriminate: its $2\%$ recall and
+chance-level AUC leave it silent on essentially all blow-ups, and its one favorable
+property---a low false-positive rate---is of little operational value at this
+coverage. This is the Claim-1 boundary, confirmed by the very machinery built to
+beat it.
 
 \subsection{Lead-time, where it exists}
 \label{sec:leadtime}
@@ -537,7 +563,7 @@ the leverage axis rather than by discipline (stop-attach, reduce-only) or tilt
 (margin top-ups, loser-adding). Two caveats keep this from being a clean
 ``mechanism.'' First, it describes only the $\approx$9\% gradual minority, not
 blow-ups at large. Second, our on-chain leverage signal is a coarse,
-volatility-normalized order-flow proxy---not reconstructed account leverage---and the
+volatility-normalized order-flow proxy, not reconstructed account leverage, and the
 discipline and tilt primitives are sparse and noisy in public fills, so the
 dominance of exposure may partly reflect what is cleanly \emph{measurable} on-chain
 rather than a behavioral truth. We therefore report exposure as the surviving
@@ -622,10 +648,11 @@ detector, pre-registered and read once against a sealed test set, confirms it:
 chance-level discrimination (AUC $0.49$) at $2\%$ recall, its lone virtue a
 lowest-in-class false-positive rate that negligible coverage renders moot. The
 residual signal, where it exists, is gradual over-leveraging---but it precedes fewer
-than one blow-up in ten and rests on a coarse proxy. The contribution is a clean,
-honest boundary: behavioral early warning is not a general safety net for
-copy-trading blow-ups; most are sudden, an equity stop dominates, and a behavioral
-layer would first need a causal, ahead-of-time definition of the small drifting
+than one blow-up in ten and rests on a coarse proxy. The result is a clear boundary:
+behavioral early warning is not a general safety net for
+copy-trading blow-ups; most are sudden, an equity stop fires directly when the damage
+starts, and a behavioral layer would first need a causal, ahead-of-time definition of
+the small drifting
 subclass before it could earn its place. The result overturns a smaller, exploratory
 version of this project---a reminder that survivorship- and withdrawal-contaminated
 cohorts can manufacture a signal that a clean, full-universe test dissolves.
@@ -647,8 +674,8 @@ baseline with stability guard, and the event-clustered bootstrap are released as
 code alongside this paper. The cohort definition (universe filter, $\Tnull$, window,
 labeling rule, market-event tag) and the detector form are pre-specified; the
 operating point is chosen on the tuning split only and was frozen---with the
-detector form and the claim gates---in a timestamped commit before the sealed test
-split was read once (Appendix~\ref{app:op}).
+detector form and the claim gates---in a timestamped version-control commit
+(\texttt{573110e}) before the sealed test split was read once (Appendix~\ref{app:op}).
 
 \section{The forward-only blow-up rule}
 \label{app:rule}
@@ -659,9 +686,11 @@ that peak within 30 days. A candidate is \emph{confirmed} only if its crater is
 loss-driven: the cumulative-PnL drop from peak to trough must be at least half the
 equity drop. A candidate that fails this test is a withdrawal, not a loss---the
 running peak is reset to the post-withdrawal level and the scan continues---so the
-labeled time is the first genuinely loss-driven account-death. The rule uses no
-information after $t$, so a label cannot leak into the detection window. Robustness
-reruns vary the drawdown threshold over $\{0.50, 0.70, 0.85\}$.
+labeled time is the first genuinely loss-driven account-death. The rule uses
+information after $t$ only to \emph{confirm} the crater (the 30-day recovery and
+loss-confirmation checks); because the detector is evaluated strictly before the
+crater onset under the guard band, no label information leaks into the detection
+window. Robustness reruns vary the drawdown threshold over $\{0.50, 0.70, 0.85\}$.
 
 \section{Operating-point selection procedure}
 \label{app:op}
@@ -671,7 +700,7 @@ $\kappa \in \{7,14\}$ at fixed $\tau = 0.3$, 4-hour buckets, and a 20-bucket
 burn-in. On the \emph{tuning} split only (1{,}025 blow-up / 380 stable) we retain
 grid points with tuning stable-FPR $\leq 0.10$, select the highest-recall
 configuration, and break ties by the longest tuning lead. This yields the operating
-point $M=3$, $\kappa=7$, which---with the detector form and the claim gates---was
+point $M=3$, $\kappa=7$, which, with the detector form and the claim gates, was
 frozen in a timestamped pre-registration commit before any test data were read. The
 \emph{sealed} test set (990 blow-up / 404 stable) is then read exactly once with this
 frozen tuple; the tuning re-derivation is verified to reproduce the frozen value, and

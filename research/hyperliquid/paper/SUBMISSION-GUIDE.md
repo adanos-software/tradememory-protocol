@@ -1,6 +1,6 @@
 # arXiv Submission Guide — Copy-Trading Drift Paper
 
-> Status: **paper compiled (`main.pdf`, 12 pages, ~174 KB), arXiv-ready.** This is the
+> Status: **paper compiled (`main.pdf`, 13 pages, ~176 KB), arXiv-ready.** This is the
 > **full-universe, pre-registered** version (the operating point was frozen before the
 > sealed test was read). Last human steps are yours: arXiv account + the irreversible submit.
 
@@ -30,7 +30,7 @@
    - **Title**: The Limits of Behavioral Early Warning for Copy-Trading Blow-Ups: A Pre-Registered, Full-Universe On-Chain Study (Hyperliquid)
    - **Authors**: Syuan Wei Peng (Sean Peng), Mnemox AI
    - **Abstract**: paste the abstract from `main.tex` (the `\begin{abstract}` block).
-   - **Comments**: e.g. "12 pages, 3 figures. Pre-registered, full-universe observational study on Hyperliquid; operating point frozen before the sealed test was read once; data/code available."
+   - **Comments**: e.g. "13 pages, 3 figures. Pre-registered, full-universe observational study on Hyperliquid; operating point frozen before the sealed test was read once; data/code available."
 7. **Timing for best listing position** (per `behavioral-drift-paper-arxiv-2026-05.md`): submit **Sunday ~13:55 ET = Monday ~01:55 Taiwan** to land at the top of Monday's q-fin.TR listing.
 8. Submit. (This is the irreversible step — once announced, it's public.)
 

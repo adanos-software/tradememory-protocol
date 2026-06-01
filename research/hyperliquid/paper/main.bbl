@@ -8,7 +8,7 @@
 \bibitem[Adams and MacKay(2007)]{adams2007bocpd}
 Ryan~Prescott Adams and David J.~C. MacKay.
 \newblock Bayesian online changepoint detection.
-\newblock In \emph{arXiv preprint arXiv:0710.3742}, 2007.
+\newblock arXiv:0710.3742, 2007.
 
 \bibitem[Barber and Odean(2000)]{barber2000trading}
 Brad~M. Barber and Terrance Odean.
@@ -75,7 +75,7 @@ Sture Holm.
 \newblock Online imitative trading practices: Copy trading, mirror trading,
   social trading.
 \newblock Final Report FR/06/2025, IOSCO, Madrid, 2025.
-\newblock Consultation report CR/10/2024.
+\newblock Supersedes consultation report CR/10/2024.
 
 \bibitem[James and Stein(1961)]{james1961stein}
 W.~James and Charles Stein.
@@ -83,13 +83,13 @@ W.~James and Charles Stein.
 \newblock \emph{Proceedings of the Fourth Berkeley Symposium on Mathematical
   Statistics and Probability}, 1:\penalty0 361--379, 1961.
 
-\bibitem[Johari et~al.(2017)Johari, Pekelis, and Walsh]{johari2017peeking}
+\bibitem[Johari et~al.(2015)Johari, Pekelis, and Walsh]{johari2017peeking}
 Ramesh Johari, Leo Pekelis, and David~J. Walsh.
 \newblock Always valid inference: Bringing sequential analysis to {A/B}
   testing.
-\newblock \emph{arXiv preprint arXiv:1512.04922}, 2017.
+\newblock arXiv:1512.04922, 2015.
 \newblock Mixture sequential probability ratio test (mSPRT) for continuous
-  monitoring without peeking inflation.
+  monitoring.
 
 \bibitem[Magdon-Ismail and Atiya(2004)]{magdon2004maxdd}
 Malik Magdon-Ismail and Amir~F. Atiya.
