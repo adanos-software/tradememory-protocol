@@ -3,6 +3,29 @@
 > Status: **Part 1 APPROVED & LOCKED 2026-05-30** — this commit is the timestamped pre-registration record the paper cites (spec §7.1/§7.2). **Part 2 (detector) locks after Plan 2's synthetic Monte-Carlo calibration, before the locked test is read.** Values chosen on principle + the 2026-05-30 viability scoping (`COHORT-REPORT.md`) — **NOT fit to the locked test set, which stays untouched until the detector is frozen.**
 > Spec: `docs/superpowers/specs/2026-05-30-copytrading-drift-paper-design.md` · Headline cohort LOCKED: idiosyncratic lead-time (A) + crash-day discrimination (B).
 
+---
+
+## 🔒 Part 2 — LOCKED 2026-06-01 UTC (full-universe pre-registered run) — Sean approved
+
+**This commit is the timestamped Part-2 pre-registration. The sealed TEST split is read exactly ONCE, after this commit.** No test data informed anything below; the operating point was chosen on the TUNING split only.
+
+**Full-universe cohort (frozen):**
+- Universe = full Hyperliquid leaderboard (37,895 addrs), Part-1 filter (pre-T₀ peak ≥ $25k, ≥2 pre-T₀ pts, first-fill-≤-T₀ proxy). T₀=2025-06-01, window end 2026-04-30.
+- Labeling = **forward-only LOSS-CONFIRMED** (`blowup.forward_only_loss_confirmed_blowup`): the first >70%-drawdown-no-recovery crater whose cumulative-PnL drop ≥ 0.5× equity drop; withdrawal craters reset the peak and the scan continues. (At T₀=2025-06-01, 65% of naive equity-only craters are withdrawals — the Part-1 #6 withdrawal filter is therefore applied *inside* the labeler, not post-hoc.)
+- Result: **10,395 qualified · 2,621 idiosyncratic blow-ups · effective-N = 48 independent crash-days** · blow-up loss-ratio median 1.0.
+- Behavioral cohort (Stage 2): **2,482 blow-up + 973 stable = 3,455 masters**; address-hashed split **tuning 1,405 (1,025 blow-up / 380 stable) · val 656 (467 / 189) · LOCKED test 1,394 (990 / 404)**.
+
+**Frozen detector + operating point (chosen on TUNING only):**
+- Form: per-axis one-sided mSPRT (α=0.01), Holm-corrected min-gate, sustained ≥ M, 70%-peak / pre-first-liquidation guard band; early-window self-baseline (frac 0.20) with James–Stein shrinkage κ; std-based scale on sparse primitives.
+- Operating-point rule: among the M×κ grid (M∈{2,3,4}, κ∈{7,14}, τ=0.3, 4h buckets, burn-in 20) take the highest tuning-blow-up recall with tuning-stable FPR ≤ 0.10, tie-break longest tuning lead.
+- **Frozen tuple: M=3, κ=7, τ=0.3, bucket=4h, burn-in=20.**
+
+**Frozen claim gates (Part 3, unchanged):** A — median lead advantage over best of {B1,B2,B3} > 0, event-clustered 95% CI excludes 0. B — AUC 95%-CI lower > 0.65, volatility-null FPR < 0.10, PPV ≥ 0.30. C — dimensionless, no $ in abstract.
+
+**Procedure:** read the LOCKED test split (1,394 masters) once with the frozen tuple; report Claim A/B + the FPR/recall/lead table on it. Operating point NOT re-tuned on test. The locked-test read is in the commit's successor.
+
+---
+
 Two parts: **Part 1 = data/cohort params lockable NOW**; **Part 2 = detector params lockable AFTER Plan 2's synthetic Monte-Carlo calibration** (the detector must be calibrated on synthetic data, not real outcomes, then frozen before the real locked test).
 
 ---
