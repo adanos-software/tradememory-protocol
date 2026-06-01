@@ -241,19 +241,8 @@ ax.axvline(0, color="#D55E00", linewidth=1.8, linestyle="--", zorder=4, label="S
 ax.axvline(median_lead, color="#0072B2", linewidth=1.4, linestyle=":", zorder=4,
            label=f"Median = {median_lead:.1f} d")
 
-# Annotations
-ax.text(
-    0.03, 0.96,
-    f"{n_no_behavior}/{n_blowup_ge20} blowups ({pct_sudden:.0f}%)\nhave NO gradual behavioral signal",
-    transform=ax.transAxes, fontsize=9.5, va="top", ha="left",
-    bbox=dict(boxstyle="round,pad=0.3", fc="#FFF9C4", ec="#CCBB00", alpha=0.92),
-)
-ax.text(
-    0.97, 0.96,
-    f"Behavior leads in\n{pct_behavior_leads:.0f}% of measurable\ncases",
-    transform=ax.transAxes, fontsize=9.5, va="top", ha="right",
-    bbox=dict(boxstyle="round,pad=0.3", fc="#E8F5E9", ec="#009E73", alpha=0.92),
-)
+# (In-plot callouts removed to avoid colliding with the legend; the same
+#  numbers are stated in the title and the LaTeX caption.)
 
 ax.set_xlabel("Lead time: $T_{\\mathrm{equity}} - T_{\\mathrm{behavior}}$ (days)")
 ax.set_ylabel("Number of masters")
@@ -262,7 +251,7 @@ ax.set_title(
     f"(blowup masters with $\\geq$20 buckets, $n={n_blowup_ge20}$; both signals measurable: $n={n_both_measurable}$)",
     fontsize=10.5,
 )
-ax.legend(loc="upper center", fontsize=9, ncol=2, framealpha=0.85)
+ax.legend(loc="upper left", fontsize=8.5, ncol=1, framealpha=0.9)
 ax.set_xlim(leads_min - pad * 2, leads_max + pad * 2)
 
 fig.savefig(fig1_outbase + ".pdf", format="pdf", bbox_inches="tight")
@@ -308,17 +297,17 @@ fig, (ax_main, ax_lead) = plt.subplots(
 )
 fig.subplots_adjust(left=0.10, right=0.97, top=0.88, bottom=0.14, wspace=0.45)
 
-for i, (label, fpr, rec, color, sz, mk) in enumerate(
-        zip(labels_list, fpr_list, recall_list, colors, sizes, markers)):
+# Short labels placed directly above each point (distinct x-positions => no overlap).
+short_pt_labels = ["Det", "B1", "B2", "B3"]
+label_dy = [0.060, 0.050, 0.045, 0.050]
+for i, (fpr, rec, color, sz, mk) in enumerate(
+        zip(fpr_list, recall_list, colors, sizes, markers)):
     ax_main.scatter(fpr, rec, color=color, s=sz, marker=mk, zorder=4, edgecolors="white", linewidths=0.7)
-    # offset labels to avoid overlap
-    x_off = [0.004, 0.004, -0.030, 0.004][i]
-    y_off = [0.015, -0.035, 0.010, -0.030][i]
     ax_main.annotate(
-        label, (fpr, rec),
-        xytext=(fpr + x_off, rec + y_off),
-        fontsize=9, color=color, fontweight="bold",
-        arrowprops=dict(arrowstyle="-", color=color, lw=0.8),
+        short_pt_labels[i], (fpr, rec),
+        xytext=(fpr, rec + label_dy[i]),
+        ha="center", fontsize=9.5, color=color, fontweight="bold",
+        arrowprops=dict(arrowstyle="-", color=color, lw=0.7),
     )
 
 # Diagonal reference (FPR = recall)
@@ -331,14 +320,8 @@ ax_main.set_ylabel("Recall (blowup masters, early fire)")
 ax_main.set_title(f"FPR / Recall trade-off\n(held-out: {_nb_hold} blowup, {_ns_hold} stable)", fontsize=10.5)
 ax_main.legend(fontsize=8.5, loc="upper left", framealpha=0.8)
 
-# Annotate detector's FPR advantage
-ax_main.annotate(
-    f"Lowest FPR\n({_det_fpr * 100:.1f}%)",
-    (fpr_list[0], recall_list[0]),
-    xytext=(fpr_list[0] + 0.025, recall_list[0] - 0.12),
-    fontsize=8.5, color="#0072B2",
-    arrowprops=dict(arrowstyle="->", color="#0072B2", lw=1.0),
-)
+# (Detector "Lowest FPR" callout removed: it collided with the x-axis label and
+#  duplicates Table 1; the detector point is already clearly the left-most.)
 
 # Right panel: median lead bars
 short_labels = ["Det.", "B1", "B2", "B3"]
@@ -394,20 +377,10 @@ ax.set_title(
     fontsize=10.0,
 )
 
-note = (
-    "Source: model-free behavioral drift rule\n"
-    "(leverage, loser-add, stop-attach; early-window p90/p10 threshold).\n"
-    f"Not the mSPRT detector. Detector median lead = {_det_lead_d:.1f} d on its\n"
-    "fired subset (fair_comparison_results.json)."
-)
-ax.text(
-    0.97, 0.97, note,
-    transform=ax.transAxes, fontsize=7.8, va="top", ha="right",
-    color="0.4",
-    bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.75", alpha=0.85),
-)
+# (Source note moved to the LaTeX caption to keep the plot uncluttered:
+#  this is the model-free drift rule, not the mSPRT detector.)
 
-ax.legend(fontsize=9, framealpha=0.85)
+ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
 fig.savefig(fig3_outbase + ".pdf", format="pdf", bbox_inches="tight")
 fig.savefig(fig3_outbase + ".png", format="png", dpi=DPI, bbox_inches="tight")
 plt.close(fig)
