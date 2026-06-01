@@ -1,116 +1,118 @@
 {
-  "note": "FAIR comparison: FPR (stable) / recall (blowup early) / median-lead, every method side by side. Operating point chosen on TUNING, reported on held-out test+val. No test snooping.",
-  "n_tuning_blowup": 32,
-  "n_tuning_stable": 41,
-  "n_holdout_blowup": 63,
-  "n_holdout_stable": 63,
+  "note": "FAIR comparison: FPR (stable) / recall (blowup early) / median-lead, every method side by side. Operating point chosen on TUNING, reported on the held-out eval split. No operating-point tuning on the eval split.",
+  "eval_split": "test",
+  "locked_test_read": true,
+  "n_tuning_blowup": 1025,
+  "n_tuning_stable": 380,
+  "n_holdout_blowup": 990,
+  "n_holdout_stable": 404,
   "detector_operating_point": {
-    "M": 2,
+    "M": 3,
     "kappa": 7.0,
     "tau": 0.3,
     "bucket_ms": 14400000,
     "burn_in": 20,
     "weights": "equal"
   },
-  "operating_point_selection": "chose highest-recall cfg among the 6 grid points with tuning-stable FPR <= 0.1 (tie-break: longest tuning lead)",
+  "operating_point_selection": "chose highest-recall cfg among the 6 grid points with tuning-stable FPR <= 0.1 (tie-break: longest tuning lead) | LOCKED cfg M=3 kappa=7.0 (tuning re-derivation M=3 kappa=7.0: MATCH)",
   "tuning_grid": [
     {
       "M": 2,
       "kappa": 7.0,
-      "fpr": 0.0975609756097561,
-      "recall": 0.09375,
-      "median_lead_hours": 123.8949475,
-      "selected": true
+      "fpr": 0.021052631578947368,
+      "recall": 0.018536585365853658,
+      "median_lead_hours": 2299.8666722222224,
+      "selected": false
     },
     {
       "M": 2,
       "kappa": 14.0,
-      "fpr": 0.0975609756097561,
-      "recall": 0.09375,
-      "median_lead_hours": 123.8949475,
+      "fpr": 0.021052631578947368,
+      "recall": 0.015609756097560976,
+      "median_lead_hours": 2238.9666733333333,
       "selected": false
     },
     {
       "M": 3,
       "kappa": 7.0,
-      "fpr": 0.0975609756097561,
-      "recall": 0.09375,
-      "median_lead_hours": 119.8949475,
-      "selected": false
+      "fpr": 0.018421052631578946,
+      "recall": 0.01951219512195122,
+      "median_lead_hours": 2252.9666733333333,
+      "selected": true
     },
     {
       "M": 3,
       "kappa": 14.0,
-      "fpr": 0.0975609756097561,
-      "recall": 0.09375,
-      "median_lead_hours": 119.8949475,
+      "fpr": 0.018421052631578946,
+      "recall": 0.016585365853658537,
+      "median_lead_hours": 2202.0666744444443,
       "selected": false
     },
     {
       "M": 4,
       "kappa": 7.0,
-      "fpr": 0.0975609756097561,
-      "recall": 0.0625,
-      "median_lead_hours": 1143.5668313888889,
+      "fpr": 0.018421052631578946,
+      "recall": 0.01951219512195122,
+      "median_lead_hours": 2248.9666733333333,
       "selected": false
     },
     {
       "M": 4,
       "kappa": 14.0,
-      "fpr": 0.0975609756097561,
-      "recall": 0.0625,
-      "median_lead_hours": 1143.5668313888889,
+      "fpr": 0.018421052631578946,
+      "recall": 0.015609756097560976,
+      "median_lead_hours": 2230.9666733333333,
       "selected": false
     }
   ],
   "stability_guard_accounting_heldout_blowup": {
-    "n_blowup": 63,
+    "n_blowup": 990,
     "excluded": 0,
-    "fallback": 23,
-    "normal": 40,
+    "fallback": 168,
+    "normal": 822,
     "excluded_frac": 0.0,
-    "fallback_frac": 0.36507936507936506
+    "fallback_frac": 0.1696969696969697
   },
   "methods": {
     "detector": {
-      "fpr": 0.047619047619047616,
-      "recall": 0.23809523809523808,
-      "n_fire_blowup_early": 15,
-      "median_lead_hours": 669.1197783333333,
-      "median_lead_days": 27.879990763888888,
-      "n_blowup": 63,
-      "n_stable": 63,
-      "fp": 3
+      "fpr": 0.039603960396039604,
+      "recall": 0.021212121212121213,
+      "n_fire_blowup_early": 21,
+      "median_lead_hours": 1171.600014722222,
+      "median_lead_days": 48.81666728009259,
+      "n_blowup": 990,
+      "n_stable": 404,
+      "fp": 16
     },
     "B1_leverage_p90": {
-      "fpr": 0.1746031746031746,
-      "recall": 0.23809523809523808,
-      "n_fire_blowup_early": 15,
-      "median_lead_hours": 2015.4000044444444,
-      "median_lead_days": 83.97500018518518,
-      "n_blowup": 63,
-      "n_stable": 63,
-      "fp": 11
+      "fpr": 0.07425742574257425,
+      "recall": 0.10505050505050505,
+      "n_fire_blowup_early": 104,
+      "median_lead_hours": 1240.4000163888888,
+      "median_lead_days": 51.6833340162037,
+      "n_blowup": 990,
+      "n_stable": 404,
+      "fp": 30
     },
     "B2_drawdown_velocity": {
-      "fpr": 0.2222222222222222,
-      "recall": 0.36507936507936506,
-      "n_fire_blowup_early": 23,
-      "median_lead_hours": 1679.2666858333334,
-      "median_lead_days": 69.96944524305556,
-      "n_blowup": 63,
-      "n_stable": 63,
-      "fp": 14
+      "fpr": 0.22524752475247525,
+      "recall": 0.22727272727272727,
+      "n_fire_blowup_early": 225,
+      "median_lead_hours": 1679.200008888889,
+      "median_lead_days": 69.96666703703704,
+      "n_blowup": 990,
+      "n_stable": 404,
+      "fp": 91
     },
     "B3_leverage_up_and_add": {
-      "fpr": 0.2222222222222222,
-      "recall": 0.5555555555555556,
-      "n_fire_blowup_early": 35,
-      "median_lead_hours": 1108.629088611111,
-      "median_lead_days": 46.192878692129625,
-      "n_blowup": 63,
-      "n_stable": 63,
-      "fp": 14
+      "fpr": 0.1707920792079208,
+      "recall": 0.15252525252525254,
+      "n_fire_blowup_early": 151,
+      "median_lead_hours": 1723.7788180555556,
+      "median_lead_days": 71.82411741898149,
+      "n_blowup": 990,
+      "n_stable": 404,
+      "fp": 69
     }
   },
   "fpr_budget": 0.1,

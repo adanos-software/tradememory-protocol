@@ -1,30 +1,37 @@
 {
-  "scaled_provisional": true,
-  "note": "INDICATIVE \u2014 scaled cohort + default cfg, NOT the pre-reg locked-test read",
-  "n_tuning": 73,
-  "n_holdout": 126,
-  "n_holdout_blowup": 63,
+  "full_universe": true,
+  "eval_split": "test",
+  "locked_test_read": true,
+  "operating_point": {
+    "M": 3,
+    "kappa": 7.0,
+    "tau": 0.3,
+    "note": "LOCKED operating point M=3 kappa=7.0 (tuning re-derivation M=3 kappa=7.0: MATCH)"
+  },
+  "n_tuning": 1405,
+  "n_holdout": 1394,
+  "n_holdout_blowup": 990,
   "claim_A": {
-    "median_advantage": -154.2255825,
-    "ci_low": -437.41069847222224,
+    "median_advantage": 0.0,
+    "ci_low": 0.0,
     "ci_high": 0.0,
-    "n_masters": 63,
-    "n_events": 31,
+    "n_masters": 990,
+    "n_events": 45,
     "passed": false
   },
   "claim_B": {
-    "auc": 0.5860418241370622,
-    "auc_ci_low": 0.5100125156445557,
-    "auc_ci_high": 0.6616666666666666,
-    "fpr": 0.047619047619047616,
-    "ppv": 0.75,
-    "n_blowup": 63,
-    "n_stable": 63,
+    "auc": 0.48996524652465245,
+    "auc_ci_low": 0.4673871088591117,
+    "auc_ci_high": 0.5143411016949152,
+    "fpr": 0.039603960396039604,
+    "ppv": 0.5675675675675675,
+    "n_blowup": 990,
+    "n_stable": 404,
     "confusion": {
-      "tp": 9,
-      "fp": 3,
-      "fn": 54,
-      "tn": 60
+      "tp": 21,
+      "fp": 16,
+      "fn": 969,
+      "tn": 388
     },
     "passed": false
   },
@@ -34,8 +41,8 @@
     "lead_ratio": null,
     "disc_ci_low": 0.0,
     "disc_ci_high": 0.0,
-    "n_masters": 63,
-    "n_events": 31
+    "n_masters": 990,
+    "n_events": 45
   },
   "ablation_50pct_bar": null
 }
