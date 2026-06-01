@@ -53,7 +53,8 @@ T0_MS = int(datetime(2025, 6, 1, tzinfo=timezone.utc).timestamp() * 1000)
 WINDOW_END_MS = int(datetime(2026, 4, 30, tzinfo=timezone.utc).timestamp() * 1000)
 BUCKET_MS = 4 * 3600 * 1000
 
-N_WORKERS = 6                # heavy endpoints (userFillsByTime) are weight-limited
+N_WORKERS = 12               # saturate the gate despite slow fill downloads; the gate
+                             # (not worker count) bounds the request rate, so this is 429-safe
 MIN_INTERVAL = 0.5           # ~2 req/s global; 429 errors are NOT persisted (re-fetched
                              # on resume) so transient rate-limits never lose a master
 STABLE_RATIO_DEFAULT = 1.0   # matched stable sample size = ratio * n_idiosyncratic_blowup

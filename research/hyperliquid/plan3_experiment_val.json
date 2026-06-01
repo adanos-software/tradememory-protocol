@@ -1,0 +1,48 @@
+{
+  "full_universe": true,
+  "eval_split": "val",
+  "locked_test_read": false,
+  "operating_point": {
+    "M": 3,
+    "kappa": 7.0,
+    "tau": 0.3,
+    "note": "operating point chosen on tuning: M=3 kappa=7.0 (chose highest-recall cfg among the 6 grid points with tuning-stable FPR <= 0.1 (tie-break: longest tuning lead))"
+  },
+  "n_tuning": 1405,
+  "n_holdout": 656,
+  "n_holdout_blowup": 467,
+  "claim_A": {
+    "median_advantage": 0.0,
+    "ci_low": 0.0,
+    "ci_high": 0.0,
+    "n_masters": 467,
+    "n_events": 45,
+    "passed": false
+  },
+  "claim_B": {
+    "auc": 0.49854978869968164,
+    "auc_ci_low": 0.466040400319273,
+    "auc_ci_high": 0.5316369388534337,
+    "fpr": 0.026455026455026454,
+    "ppv": 0.7368421052631579,
+    "n_blowup": 467,
+    "n_stable": 189,
+    "confusion": {
+      "tp": 14,
+      "fp": 5,
+      "fn": 453,
+      "tn": 184
+    },
+    "passed": false
+  },
+  "ablation": {
+    "full_median_lead": 0.0,
+    "disc_median_lead": 0.0,
+    "lead_ratio": null,
+    "disc_ci_low": 0.0,
+    "disc_ci_high": 0.0,
+    "n_masters": 467,
+    "n_events": 45
+  },
+  "ablation_50pct_bar": null
+}

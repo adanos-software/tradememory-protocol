@@ -1,0 +1,120 @@
+{
+  "note": "FAIR comparison: FPR (stable) / recall (blowup early) / median-lead, every method side by side. Operating point chosen on TUNING, reported on the held-out eval split. No operating-point tuning on the eval split.",
+  "eval_split": "val",
+  "locked_test_read": false,
+  "n_tuning_blowup": 1025,
+  "n_tuning_stable": 380,
+  "n_holdout_blowup": 467,
+  "n_holdout_stable": 189,
+  "detector_operating_point": {
+    "M": 3,
+    "kappa": 7.0,
+    "tau": 0.3,
+    "bucket_ms": 14400000,
+    "burn_in": 20,
+    "weights": "equal"
+  },
+  "operating_point_selection": "chose highest-recall cfg among the 6 grid points with tuning-stable FPR <= 0.1 (tie-break: longest tuning lead)",
+  "tuning_grid": [
+    {
+      "M": 2,
+      "kappa": 7.0,
+      "fpr": 0.021052631578947368,
+      "recall": 0.018536585365853658,
+      "median_lead_hours": 2299.8666722222224,
+      "selected": false
+    },
+    {
+      "M": 2,
+      "kappa": 14.0,
+      "fpr": 0.021052631578947368,
+      "recall": 0.015609756097560976,
+      "median_lead_hours": 2238.9666733333333,
+      "selected": false
+    },
+    {
+      "M": 3,
+      "kappa": 7.0,
+      "fpr": 0.018421052631578946,
+      "recall": 0.01951219512195122,
+      "median_lead_hours": 2252.9666733333333,
+      "selected": true
+    },
+    {
+      "M": 3,
+      "kappa": 14.0,
+      "fpr": 0.018421052631578946,
+      "recall": 0.016585365853658537,
+      "median_lead_hours": 2202.0666744444443,
+      "selected": false
+    },
+    {
+      "M": 4,
+      "kappa": 7.0,
+      "fpr": 0.018421052631578946,
+      "recall": 0.01951219512195122,
+      "median_lead_hours": 2248.9666733333333,
+      "selected": false
+    },
+    {
+      "M": 4,
+      "kappa": 14.0,
+      "fpr": 0.018421052631578946,
+      "recall": 0.015609756097560976,
+      "median_lead_hours": 2230.9666733333333,
+      "selected": false
+    }
+  ],
+  "stability_guard_accounting_heldout_blowup": {
+    "n_blowup": 467,
+    "excluded": 0,
+    "fallback": 74,
+    "normal": 393,
+    "excluded_frac": 0.0,
+    "fallback_frac": 0.15845824411134904
+  },
+  "methods": {
+    "detector": {
+      "fpr": 0.026455026455026454,
+      "recall": 0.029978586723768737,
+      "n_fire_blowup_early": 14,
+      "median_lead_hours": 1189.7666713888889,
+      "median_lead_days": 49.57361130787037,
+      "n_blowup": 467,
+      "n_stable": 189,
+      "fp": 5
+    },
+    "B1_leverage_p90": {
+      "fpr": 0.0582010582010582,
+      "recall": 0.07066381156316917,
+      "n_fire_blowup_early": 33,
+      "median_lead_hours": 1246.333333888889,
+      "median_lead_days": 51.93055557870371,
+      "n_blowup": 467,
+      "n_stable": 189,
+      "fp": 11
+    },
+    "B2_drawdown_velocity": {
+      "fpr": 0.21693121693121692,
+      "recall": 0.21413276231263384,
+      "n_fire_blowup_early": 100,
+      "median_lead_hours": 1678.7833506944444,
+      "median_lead_days": 69.94930627893518,
+      "n_blowup": 467,
+      "n_stable": 189,
+      "fp": 41
+    },
+    "B3_leverage_up_and_add": {
+      "fpr": 0.14285714285714285,
+      "recall": 0.12633832976445397,
+      "n_fire_blowup_early": 59,
+      "median_lead_hours": 1857.3049025,
+      "median_lead_days": 77.38770427083334,
+      "n_blowup": 467,
+      "n_stable": 189,
+      "fp": 27
+    }
+  },
+  "fpr_budget": 0.1,
+  "baseline_guard_x": 0.7
+}
