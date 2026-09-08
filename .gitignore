@@ -113,3 +113,8 @@ docs/marketing/
 
 # internal reports (market research, distribution logs, trader fingerprints)
 reports/
+
+# Local archive (contains credentials) and scratch output — never commit
+_archive/
+.hypothesis/
+out/
