@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="TradeMemory Protocol",
     description="AI Agent Trading Memory & Adaptive Decision Layer",
-    version="0.5.4"
+    version="0.5.5"
 )
 
 # CORS middleware — allow dashboard dev server
@@ -1563,6 +1563,32 @@ _API_PREFIXES = (
     "patterns/", "adjustments/", "owm/", "evolution/", "health",
 )
 
+def _resolve_static_file(full_path: str, dist_root: Path) -> Optional[Path]:
+    """Map a request path to a regular file inside ``dist_root``.
+
+    Returns the resolved file path when ``full_path`` names an existing
+    regular file under ``dist_root``; returns ``None`` when the path is
+    empty or names nothing servable (caller falls back to the SPA
+    ``index.html``); raises 404 when the path escapes ``dist_root``
+    (``..`` traversal, absolute paths, symlinks pointing outside).
+
+    Containment is checked with :meth:`Path.is_relative_to` (a component
+    boundary check). A plain string ``startswith`` on the resolved dist
+    root was not sufficient: a sibling directory whose name merely shares
+    the prefix (``dist-x/``) passed it (GitHub issue #13).
+    """
+    root = dist_root.resolve()
+    try:
+        candidate = (root / full_path).resolve()
+    except (OSError, RuntimeError, ValueError):
+        raise HTTPException(status_code=404, detail="Not found")
+    if not candidate.is_relative_to(root):
+        raise HTTPException(status_code=404, detail="Not found")
+    if full_path and candidate != root and candidate.is_file():
+        return candidate
+    return None
+
+
 if _dashboard_dist.exists():
     _assets_dir = _dashboard_dist / "assets"
     if _assets_dir.exists():
@@ -1574,12 +1600,10 @@ if _dashboard_dist.exists():
         """Catch-all: serve SPA index.html for client-side routing."""
         if full_path.startswith(_API_PREFIXES):
             raise HTTPException(status_code=404, detail="Not found")
-        # Serve static files (e.g. vite.svg) if they exist on disk
-        # Path traversal protection: resolve and verify within dashboard_dist
-        static_file = (_dashboard_dist / full_path).resolve()
-        if not str(static_file).startswith(str(_dashboard_dist.resolve())):
-            raise HTTPException(status_code=404, detail="Not found")
-        if full_path and static_file.exists() and static_file.is_file():
+        # Serve static files (e.g. vite.svg) if they exist on disk.
+        # Path traversal protection lives in _resolve_static_file (#13).
+        static_file = _resolve_static_file(full_path, _dashboard_dist)
+        if static_file is not None:
             return FileResponse(str(static_file))
         return FileResponse(str(_dashboard_dist / "index.html"))
 

@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [0.5.5] - 2026-09-09
+
+Security hotfix.
+
+### Security
+- **SPA catch-all path containment** (GitHub issue #13). The dashboard
+  catch-all in `server.py` verified that a resolved static path lived
+  inside `dashboard/dist` with a plain string `startswith`, which has no
+  path-component boundary: a sibling directory whose name merely shares
+  the prefix (`dist-x/`) passed the check. Containment is now
+  `Path.is_relative_to` in a dedicated `_resolve_static_file` helper;
+  paths that escape the dist root return 404 as before, and client-side
+  routes still fall back to `index.html`. Only the REST server is
+  affected, and only when the built dashboard (`dashboard/dist`) is
+  present. Regression tests in `tests/test_spa_path_traversal.py`.
+
 ## [0.5.4] - 2026-07-29
 
 Hotfix release: an adversarial review immediately after 0.5.3 found three

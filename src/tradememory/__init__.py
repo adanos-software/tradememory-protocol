@@ -2,7 +2,7 @@
 TradeMemory Protocol - AI Agent Trading Memory & Adaptive Decision Layer
 """
 
-__version__ = "0.5.4"
+__version__ = "0.5.5"
 
 
 def main():
