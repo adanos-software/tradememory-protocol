@@ -8,8 +8,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/tradememory-protocol?style=flat-square&color=blue)](https://pypi.org/project/tradememory-protocol/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/mnemox-ai/tradememory-protocol/ci.yml?branch=master&style=flat-square&label=tests)](https://github.com/mnemox-ai/tradememory-protocol/actions/workflows/ci.yml)
-[![MCP Tools](https://img.shields.io/badge/MCP_tools-20-blueviolet?style=flat-square)](https://smithery.ai/server/io.github.mnemox-ai/tradememory-protocol)
-[![Smithery](https://img.shields.io/badge/Smithery-listed-orange?style=flat-square)](https://smithery.ai/server/io.github.mnemox-ai/tradememory-protocol)
+[![MCP Tools](https://img.shields.io/badge/MCP_tools-20-blueviolet?style=flat-square)](https://smithery.ai/server/mnemox-ai/tradememory-protocol)
+[![Smithery](https://img.shields.io/badge/Smithery-listed-orange?style=flat-square)](https://smithery.ai/server/mnemox-ai/tradememory-protocol)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](https://opensource.org/licenses/MIT)
 
 [Getting Started](docs/GETTING_STARTED.md) | [Use Cases](docs/USE_CASES.md) | [API Reference](docs/API.md) | [OWM Framework](docs/OWM_FRAMEWORK.md) | [Limitations](LIMITATIONS.md) | [中文版](docs/README_ZH.md)
@@ -17,6 +17,8 @@
 </div>
 
 ---
+
+> **Project status (August 2026):** Feature-complete, in **maintenance mode** — bug and security reports are still reviewed; no new features or hosted service are planned. For paid work, see [Trading Record Analysis](#trading-record-analysis).
 
 **Your trading AI has amnesia. And regulators are starting to notice.**
 
@@ -37,6 +39,12 @@ Used in production by traders running pre-flight checklists before every positio
 - **Safety rails:** confidence tracking, drawdown alerts, losing streak detection — the system tells you when to stop
 
 Works with any market (stocks, forex, crypto, futures), any broker, any AI platform. TradeMemory doesn't execute trades or touch your money — it only records and recalls.
+
+## See the interface
+
+**[tradememory-dashboard.onrender.com](https://tradememory-dashboard.onrender.com)** — the dashboard running on an illustrative demo dataset. Nothing to install.
+
+It is an interface preview, not a track record: the trades are synthetic and every figure on it is labelled as such. For what the memory layer actually does in a terminal, `pip install tradememory-protocol && tradememory demo --fast` replays 30 trades and shows the recall and parameter adjustment it derives from them.
 
 ## Quick Start
 
@@ -109,41 +117,27 @@ docker compose up -d
 | **Audit** | `export_audit_trail` · `verify_audit_hash` | SHA-256 tamper detection + bulk export |
 
 <details>
-<summary>All 17 MCP tools + REST API</summary>
+<summary>All 20 MCP tools + REST API</summary>
 
 | Category | Tools |
 |----------|-------|
 | **Core Memory** | `get_strategy_performance` · `get_trade_reflection` |
 | **OWM Cognitive** | `remember_trade` · `recall_memories` · `get_behavioral_analysis` · `get_agent_state` · `create_trading_plan` · `check_active_plans` |
-| **Risk & Governance** | `check_trade_legitimacy` · `validate_strategy` |
+| **Risk & Governance** | `check_trade_legitimacy` · `validate_strategy` · `compute_dqs` |
 | **Evolution** | `evolution_fetch_market_data` · `evolution_discover_patterns` · `evolution_run_backtest` · `evolution_evolve_strategy` · `evolution_get_log` |
-| **Audit** | `export_audit_trail` · `verify_audit_hash` |
+| **Audit** | `export_audit_trail` · `verify_audit_hash` · `verify_audit_chain` · `get_daily_root` |
 
 **REST API:** 35+ endpoints for trade recording, reflections, risk, MT5 sync, OWM, evolution, and audit. [Full reference →](docs/API.md)
 
 </details>
 
-## Pricing
+## Trading Record Analysis
 
-| | Community | Pro | Enterprise |
-|---|---|---|---|
-| **Price** | **Free** | **$29/mo** (Coming Soon) | **Contact Us** |
-| MCP tools | 17 tools | 17 tools | 17 tools |
-| Storage | SQLite, self-hosted | Hosted API | Private deployment |
-| Dashboard | — | Web dashboard | Custom dashboard |
-| Compliance | Audit trail included | Audit trail included | Compliance reports + SLA |
-| Support | GitHub Issues | Priority support | Dedicated support |
-| | [Get Started →](docs/GETTING_STARTED.md) | *Coming soon* | [dev@mnemox.ai](mailto:dev@mnemox.ai) |
+TradeMemory itself is free and self-hosted. What the maintainer offers as a paid service is **statistical analysis of your own trading records**: export your MT4/MT5 history and get a descriptive-statistics report — where your losses concentrate, how your position sizing changes after losses, forced-liquidation structure, and the actual risk you took per trade — followed by a walkthrough call.
 
-### Need Help Integrating?
-
-Building a trading AI agent and want battle-tested memory architecture?
-
-**Free 30-min strategy call** — we'll map your agent's memory needs and design guardrails for your specific workflow.
+Descriptive statistics of past trades only: no trade signals, no investment advice, no performance promises. Your files are deleted after delivery.
 
 [dev@mnemox.ai](mailto:dev@mnemox.ai) | [Book a call](https://calendly.com/johnson90207/30min)
-
-> *We've helped traders build pre-flight checklists, connect MT5/Binance, and design custom guardrails for forex, equities, and crypto.*
 
 ## Enterprise & Compliance
 
@@ -180,7 +174,7 @@ See [LIMITATIONS.md](LIMITATIONS.md) for the full audit-chain maturity statement
 
 - **Never touches API keys.** TradeMemory does not execute trades, move funds, or access wallets.
 - **Read and record only.** Your agent passes decision context to TradeMemory. It stores it. That's it.
-- **Local-first.** No external network calls by default; the only optional outbound call is RFC 3161 trusted timestamping, and only if you enable it. No data is sent to third parties.
+- **Local-first.** The only outbound call is RFC 3161 trusted timestamping of daily audit roots — a 32-byte hash, no trade data (on by default; disable with `TRADEMEMORY_TSA=off`). Nothing else leaves your machine.
 - **SHA-256 chained audit ledger.** Every record is hashed at creation and linked to the previous record. Daily Merkle roots anchor the chain. Verify integrity at the record, slice, or day level. Tampering is detectable at every level; external anchoring (TSA by default) is on the roadmap.
 - **1,400+ tests passing.** Full test suite with CI.
 
@@ -189,7 +183,7 @@ See [LIMITATIONS.md](LIMITATIONS.md) for the full audit-chain maturity statement
 TradeMemory's OWM framework is grounded in cognitive science (Tulving 1972)
 and reinforcement learning (Schaul et al. 2015). Current status:
 
-- **OWM five-factor scoring:** implemented, tested (1,300+ tests)
+- **OWM five-factor scoring:** implemented, tested (1,400+ tests)
 - **Statistical validation:** DSR, MBL implemented (Bailey-de Prado 2014)
 - **Audit trail:** SHA-256 tamper-evident TDR
 - **Evolution engine:** research phase (strategy generation works, statistical gate pass rate under optimization)

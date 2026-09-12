@@ -29,8 +29,8 @@ def client_and_key(tmp_path, monkeypatch):
     db = srv.get_db()
     api_key = db.create_api_key("test-account", "trader")
 
-    client = TestClient(srv.app)
-    yield client, api_key
+    with TestClient(srv.app) as client:
+        yield client, api_key
 
     srv._db = None
 
@@ -49,7 +49,7 @@ class TestHealth:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "healthy"
-        assert data["version"] == "0.5.0"
+        assert data["version"] == "0.5.4"
 
 
 # ========== Auth ==========
@@ -75,6 +75,133 @@ class TestAuth:
     def test_nonexistent_key(self, client_and_key):
         client, _ = client_and_key
         resp = client.get("/api/v1/trades", headers={"Authorization": "Bearer tm_live_nonexistent"})
+        assert resp.status_code == 401
+
+
+class TestMCPAuth:
+    """The mounted MCP sub-app bypasses route dependencies — the middleware must gate it.
+
+    Discovery methods stay open so registries (Smithery, MCP Registry) and
+    uptime checks can introspect the server; anything that can touch stored
+    memory requires a key.
+    """
+
+    CALL_BODY = {
+        "jsonrpc": "2.0", "method": "tools/call", "id": 1,
+        "params": {"name": "get_agent_state", "arguments": {}},
+    }
+    LIST_BODY = {"jsonrpc": "2.0", "method": "tools/list", "id": 1}
+    MCP_ACCEPT = {"Accept": "application/json, text/event-stream"}
+
+    def test_tool_call_requires_key(self, client_and_key):
+        client, _ = client_and_key
+        resp = client.post("/mcp", json=self.CALL_BODY, headers=self.MCP_ACCEPT)
+        assert resp.status_code == 401
+        assert resp.json()["error"] == "unauthorized"
+
+    def test_tool_call_rejects_bad_key(self, client_and_key):
+        client, _ = client_and_key
+        resp = client.post(
+            "/mcp", json=self.CALL_BODY,
+            headers={**self.MCP_ACCEPT, "Authorization": "Bearer tm_live_nonexistent"},
+        )
+        assert resp.status_code == 401
+
+    def test_tool_call_accepts_valid_key(self, client_and_key):
+        client, api_key = client_and_key
+        resp = client.post(
+            "/mcp", json=self.CALL_BODY,
+            headers={**self.MCP_ACCEPT, **auth_header(api_key)},
+        )
+        assert resp.status_code != 401
+
+    def test_tools_list_is_public(self, client_and_key):
+        """Registries must be able to enumerate tools without a key."""
+        client, _ = client_and_key
+        resp = client.post("/mcp", json=self.LIST_BODY, headers=self.MCP_ACCEPT)
+        assert resp.status_code != 401
+
+    def test_tools_list_streams_a_real_body(self, client_and_key):
+        """Regression: a BaseHTTPMiddleware gate returned 200 with an EMPTY
+        body — registries saw a live endpoint that listed nothing and timed
+        out. The gate must not swallow the event stream."""
+        import json as _json
+        import re as _re
+
+        client, _ = client_and_key
+        resp = client.post("/mcp", json=self.LIST_BODY, headers=self.MCP_ACCEPT)
+        assert resp.status_code == 200
+        match = _re.search(r"data: (.*)", resp.text)
+        assert match, f"no SSE data frame in response: {resp.text[:200]!r}"
+        tools = _json.loads(match.group(1))["result"]["tools"]
+        assert len(tools) > 10
+        assert any(t["name"] == "remember_trade" for t in tools)
+
+    def test_initialize_is_public(self, client_and_key):
+        client, _ = client_and_key
+        resp = client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0", "method": "initialize", "id": 1,
+                "params": {
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": {},
+                    "clientInfo": {"name": "registry-probe", "version": "1"},
+                },
+            },
+            headers=self.MCP_ACCEPT,
+        )
+        assert resp.status_code != 401
+
+    def test_every_tool_declares_annotations(self, client_and_key):
+        """Clients auto-approve read-only tools from these hints, and
+        registries score them. Every tool must declare all four."""
+        import json as _json
+        import re as _re
+
+        client, _ = client_and_key
+        resp = client.post("/mcp", json=self.LIST_BODY, headers=self.MCP_ACCEPT)
+        tools = _json.loads(_re.search(r"data: (.*)", resp.text).group(1))["result"]["tools"]
+        required = {"readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"}
+        missing = [
+            t["name"] for t in tools
+            if not required.issubset((t.get("annotations") or {}).keys())
+        ]
+        assert not missing, f"tools without full annotations: {missing}"
+
+    def test_tool_call_accepts_key_via_query_param(self, client_and_key):
+        """Registry gateways forward user config as a query param, not a
+        header — a gateway user with a valid key must not get 401."""
+        client, api_key = client_and_key
+        resp = client.post(
+            f"/mcp?apiKey={api_key}", json=self.CALL_BODY, headers=self.MCP_ACCEPT
+        )
+        assert resp.status_code != 401
+
+    def test_tool_call_rejects_bad_query_param_key(self, client_and_key):
+        client, _ = client_and_key
+        resp = client.post(
+            "/mcp?apiKey=tm_live_nonexistent",
+            json=self.CALL_BODY,
+            headers=self.MCP_ACCEPT,
+        )
+        assert resp.status_code == 401
+
+    def test_sse_stream_open_is_public(self, client_and_key):
+        """Gateways open the GET stream before calling anything — a 401 here
+        makes the server look dead to registries."""
+        client, _ = client_and_key
+        resp = client.get("/mcp", headers={"Accept": "text/event-stream"})
+        assert resp.status_code != 401
+
+    def test_unknown_method_still_gated(self, client_and_key):
+        """Anything not on the public allowlist must still require a key."""
+        client, _ = client_and_key
+        resp = client.post(
+            "/mcp",
+            json={"jsonrpc": "2.0", "method": "resources/read", "id": 1, "params": {}},
+            headers=self.MCP_ACCEPT,
+        )
         assert resp.status_code == 401
 
 

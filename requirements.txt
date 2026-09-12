@@ -1,14 +1,14 @@
-fastapi>=0.109.0
-fastmcp>=2.0.0
+fastapi>=0.109.1
+fastmcp>=3.2.0,<4
 uvicorn>=0.27.0
 pydantic>=2.5.3
-pytest>=7.4.4
+pytest>=9.0.3
 pytest-asyncio>=0.23.3
 hypothesis>=6.98.0
 httpx>=0.26.0
 numpy>=1.24.0
-python-dotenv>=1.0.0
-requests>=2.31.0
+python-dotenv>=1.2.2
+requests>=2.33.0
 
 # Optional: MT5 integration (required for mt5_sync.py)
 # MetaTrader5>=5.0.45

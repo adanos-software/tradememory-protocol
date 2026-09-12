@@ -1,5 +1,7 @@
 # TradeMemory Hosted API Specification
 
+> **Status (August 2026):** Historical design document. The hosted API described below was never launched and is not offered for sale; TradeMemory is self-hosted only. Kept for reference.
+
 Base URL: `https://mcp.mnemox.ai/api/v1`
 
 ## Authentication
@@ -14,7 +16,8 @@ API keys are issued per account. Two key types:
 - `tm_live_*` — Production keys (metered usage)
 - `tm_test_*` — Test keys (no billing, data isolated, rate-limited to 10 req/min)
 
-Keys are managed via the dashboard at `https://mcp.mnemox.ai/dashboard`.
+Keys were to be managed via a hosted dashboard. That dashboard was never built;
+the URL previously given here (`mcp.mnemox.ai/dashboard`) returns 404.
 
 ---
 

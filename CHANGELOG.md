@@ -5,6 +5,84 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [0.5.5] - 2026-09-09
+
+Security hotfix.
+
+### Security
+- **SPA catch-all path containment** (GitHub issue #13). The dashboard
+  catch-all in `server.py` verified that a resolved static path lived
+  inside `dashboard/dist` with a plain string `startswith`, which has no
+  path-component boundary: a sibling directory whose name merely shares
+  the prefix (`dist-x/`) passed the check. Containment is now
+  `Path.is_relative_to` in a dedicated `_resolve_static_file` helper;
+  paths that escape the dist root return 404 as before, and client-side
+  routes still fall back to `index.html`. Only the REST server is
+  affected, and only when the built dashboard (`dashboard/dist`) is
+  present. Regression tests in `tests/test_spa_path_traversal.py`.
+
+## [0.5.4] - 2026-07-29
+
+Hotfix release: an adversarial review immediately after 0.5.3 found three
+critical gaps in the new anchoring path. Fixed same-day.
+
+### Fixed
+- **Rebuilds no longer destroy existing anchors.** `build_daily_root` used
+  `INSERT OR REPLACE`, which nulled a stored `tsa_token` on every rebuild
+  (TSA off, TSA failure, or backfill). The token is now carried forward
+  when the recomputed root hash is unchanged — and honestly dropped when
+  the data (and therefore the root) actually changed.
+- **TSA rejections can no longer masquerade as anchors.** `request_timestamp`
+  now parses PKIStatus and raises on an explicit rejection (status not in
+  granted/grantedWithMods) instead of storing the rejection response and
+  reporting `has_tsa_token: true`.
+- **`POST /audit/root/{date}` is protect-by-default.** An already-anchored
+  root is returned as-is (`already_anchored: true`) instead of being
+  rebuilt; pass `force=true` to rebuild. The endpoint is also sync now, so
+  the blocking TSA call runs on the threadpool instead of stalling the
+  event loop.
+- **Anchoring uses the last completed UTC day.** `daily_reflection.py`
+  previously used local "yesterday", which on UTC+N machines could anchor
+  a UTC day that had not finished yet; backfill runs (`--date`) now anchor
+  relative to the target date.
+- **`plan_triggered` events dedup per (plan, UTC day)** — agents polling
+  `check_active_plans` no longer flood `decision_events` with the same
+  standing alert. Plan id is stored in `linked_trade_id` for joins.
+- decision_events persistence failures now log at WARNING (was DEBUG).
+- Test suite forces `TRADEMEMORY_TSA=off` unconditionally (was
+  `setdefault`, which an inherited env var could override).
+- Version strings caught up in `server.py` (REST app said 0.5.2) and the
+  TSA client User-Agent no longer embeds a stale version.
+
+---
+
+## [0.5.3] - 2026-07-29
+
+### Added
+- **Anchored audit by default.** RFC 3161 timestamping of daily Merkle
+  roots is now ON unless `TRADEMEMORY_TSA=off`: `build_daily_root` and the
+  `get_daily_root` MCP tool default to the env setting, a new
+  `POST /audit/root/{date}` REST endpoint builds+timestamps a root, and
+  `scripts/daily_reflection.py` anchors yesterday's root as part of the
+  daily loop. Only a 32-byte hash leaves the machine — never trade data.
+  Backfill paths explicitly skip TSA to avoid hammering the authority.
+- **`decision_events` table** — every pre-trade gate check
+  (`check_trade_legitimacy`, `compute_dqs`) and every plan trigger is now
+  persisted with tier, score, factors and recommendation
+  (`Database.insert_decision_event` / `query_decision_events`). This is
+  the instrumentation for post-alert behavior metrics (sizing change
+  after a caution, skip rate after an alert). Events accumulate from
+  v0.5.3 forward; alert history cannot be backfilled.
+
+### Changed
+- Hosted MCP endpoint (`/mcp`) now requires the same Bearer
+  `tm_live_*`/`tm_test_*` API key as the REST endpoints — it previously
+  served tool calls unauthenticated (fixed post-0.5.2, recorded here).
+- `LIMITATIONS.md` corrected: the RFC 3161 client shipped in v0.5.2 and
+  is on by default in v0.5.3 (previously understated as roadmap-only).
+
+---
+
 ## [0.5.2] - 2026-07-29
 
 ### Added

@@ -87,10 +87,19 @@ This analyzes all trades from today and generates a structured reflection report
 
 ## 6. View the Dashboard (Optional)
 
+A hosted preview of the dashboard, running on an illustrative demo dataset, is at
+**https://tradememory-dashboard.onrender.com** — nothing to install, and none of
+the figures are real trading results.
+
+To build it against your own data:
+
 ```bash
-pip install -r dashboard/requirements.txt
-streamlit run dashboard.py
+cd dashboard && npm install && npm run build && cd ..
+uvicorn tradememory.server:app --port 8000
 ```
+
+The server mounts the built dashboard at `http://localhost:8000` once
+`dashboard/dist` exists.
 
 ---
 

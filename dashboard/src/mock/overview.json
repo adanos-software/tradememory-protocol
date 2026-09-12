@@ -1,17 +1,17 @@
 {
-  "_disclaimer": "⚠️ Generated from backtest data (2024.01-2026.02, n=10,169). Not live trading results.",
-  "total_trades": 10169,
-  "total_pnl": 276535.25,
-  "win_rate": 0.447,
-  "profit_factor": 1.61,
-  "current_equity": 286535.25,
-  "max_drawdown_pct": 0.4066,
-  "memory_count": 4102,
-  "avg_confidence": 0.5,
-  "last_trade_date": "2026-02-25T10:00:00+00:00",
+  "_disclaimer": "⚠️ Illustrative demo dataset. Synthetic trades generated for interface preview only - not a backtest, not live trading results. Account $100,000, risk $250/trade (1R).",
+  "total_trades": 690,
+  "total_pnl": 17781.48,
+  "win_rate": 0.448,
+  "profit_factor": 1.18,
+  "current_equity": 117781.48,
+  "max_drawdown_pct": 0.0992,
+  "memory_count": 903,
+  "avg_confidence": 0.555,
+  "last_trade_date": "2026-02-25T09:24:00+00:00",
   "strategies": [
     "IntradayMomentum",
-    "Pullback",
-    "VolBreakout"
+    "VolBreakout",
+    "Pullback"
   ]
 }

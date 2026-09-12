@@ -1,506 +1,1019 @@
 [
   {
-    "date": "2024-01-02",
-    "total_memories": 25,
-    "trending_up": 13,
-    "trending_down": 2,
-    "ranging": 5,
-    "volatile": 2,
-    "unknown": 3
+    "date": "2024-01-01",
+    "total_memories": 4,
+    "trending_up": 2,
+    "trending_down": 0,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2024-01-12",
-    "total_memories": 107,
-    "trending_up": 58,
-    "trending_down": 10,
-    "ranging": 21,
-    "volatile": 10,
-    "unknown": 8
+    "date": "2024-01-08",
+    "total_memories": 10,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-01-15",
+    "total_memories": 16,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-01-22",
+    "total_memories": 21,
+    "trending_up": 1,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
     "date": "2024-01-29",
-    "total_memories": 223,
-    "trending_up": 122,
-    "trending_down": 22,
-    "ranging": 44,
-    "volatile": 22,
-    "unknown": 13
+    "total_memories": 31,
+    "trending_up": 6,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2024-02-22",
-    "total_memories": 295,
-    "trending_up": 162,
-    "trending_down": 29,
-    "ranging": 59,
-    "volatile": 29,
-    "unknown": 16
+    "date": "2024-02-05",
+    "total_memories": 45,
+    "trending_up": 7,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2024-03-05",
-    "total_memories": 363,
-    "trending_up": 199,
-    "trending_down": 36,
-    "ranging": 72,
-    "volatile": 36,
-    "unknown": 20
+    "date": "2024-02-12",
+    "total_memories": 52,
+    "trending_up": 4,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 0
+  },
+  {
+    "date": "2024-02-19",
+    "total_memories": 60,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 0
+  },
+  {
+    "date": "2024-02-26",
+    "total_memories": 69,
+    "trending_up": 1,
+    "trending_down": 5,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2024-03-04",
+    "total_memories": 77,
+    "trending_up": 6,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-03-11",
+    "total_memories": 82,
+    "trending_up": 1,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
     "date": "2024-03-18",
-    "total_memories": 415,
-    "trending_up": 228,
-    "trending_down": 41,
-    "ranging": 83,
-    "volatile": 41,
-    "unknown": 22
+    "total_memories": 91,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 2,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2024-03-25",
+    "total_memories": 97,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
     "date": "2024-04-01",
-    "total_memories": 465,
-    "trending_up": 255,
-    "trending_down": 46,
-    "ranging": 93,
-    "volatile": 46,
-    "unknown": 25
+    "total_memories": 104,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 0
+  },
+  {
+    "date": "2024-04-08",
+    "total_memories": 112,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
   },
   {
     "date": "2024-04-15",
-    "total_memories": 532,
-    "trending_up": 292,
-    "trending_down": 53,
-    "ranging": 106,
-    "volatile": 53,
-    "unknown": 28
+    "total_memories": 117,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2024-05-10",
-    "total_memories": 609,
-    "trending_up": 334,
-    "trending_down": 60,
-    "ranging": 121,
-    "volatile": 60,
-    "unknown": 34
+    "date": "2024-04-22",
+    "total_memories": 121,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
   },
   {
-    "date": "2024-06-05",
-    "total_memories": 666,
-    "trending_up": 366,
-    "trending_down": 66,
-    "ranging": 133,
-    "volatile": 66,
-    "unknown": 35
+    "date": "2024-04-29",
+    "total_memories": 127,
+    "trending_up": 1,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 0
   },
   {
-    "date": "2024-06-28",
-    "total_memories": 736,
-    "trending_up": 404,
-    "trending_down": 73,
-    "ranging": 147,
-    "volatile": 73,
-    "unknown": 39
+    "date": "2024-05-06",
+    "total_memories": 133,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2024-07-11",
-    "total_memories": 815,
-    "trending_up": 448,
-    "trending_down": 81,
-    "ranging": 163,
-    "volatile": 81,
-    "unknown": 42
+    "date": "2024-05-13",
+    "total_memories": 144,
+    "trending_up": 5,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2024-07-26",
-    "total_memories": 891,
-    "trending_up": 489,
-    "trending_down": 89,
-    "ranging": 178,
-    "volatile": 89,
-    "unknown": 45
+    "date": "2024-05-20",
+    "total_memories": 149,
+    "trending_up": 0,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2024-08-08",
-    "total_memories": 977,
-    "trending_up": 536,
-    "trending_down": 97,
-    "ranging": 195,
-    "volatile": 97,
-    "unknown": 50
+    "date": "2024-05-27",
+    "total_memories": 155,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2024-08-30",
-    "total_memories": 1048,
-    "trending_up": 574,
-    "trending_down": 104,
-    "ranging": 209,
-    "volatile": 104,
-    "unknown": 54
+    "date": "2024-06-03",
+    "total_memories": 165,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 2,
+    "volatile": 2,
+    "unknown": 1
   },
   {
-    "date": "2024-09-11",
-    "total_memories": 1123,
-    "trending_up": 615,
-    "trending_down": 111,
-    "ranging": 223,
-    "volatile": 111,
-    "unknown": 59
+    "date": "2024-06-10",
+    "total_memories": 174,
+    "trending_up": 1,
+    "trending_down": 4,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2024-09-20",
-    "total_memories": 1203,
-    "trending_up": 658,
-    "trending_down": 119,
-    "ranging": 239,
-    "volatile": 119,
-    "unknown": 63
+    "date": "2024-06-17",
+    "total_memories": 179,
+    "trending_up": 3,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2024-10-01",
-    "total_memories": 1258,
-    "trending_up": 688,
-    "trending_down": 125,
-    "ranging": 250,
-    "volatile": 125,
-    "unknown": 64
+    "date": "2024-06-24",
+    "total_memories": 187,
+    "trending_up": 5,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2024-10-18",
-    "total_memories": 1335,
-    "trending_up": 729,
-    "trending_down": 132,
-    "ranging": 265,
-    "volatile": 132,
-    "unknown": 69
+    "date": "2024-07-01",
+    "total_memories": 194,
+    "trending_up": 0,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2024-10-24",
-    "total_memories": 1411,
-    "trending_up": 771,
-    "trending_down": 140,
-    "ranging": 280,
-    "volatile": 140,
-    "unknown": 71
+    "date": "2024-07-08",
+    "total_memories": 201,
+    "trending_up": 0,
+    "trending_down": 5,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2024-11-07",
-    "total_memories": 1463,
-    "trending_up": 799,
-    "trending_down": 145,
-    "ranging": 290,
-    "volatile": 145,
-    "unknown": 74
+    "date": "2024-07-15",
+    "total_memories": 208,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2024-11-21",
-    "total_memories": 1515,
-    "trending_up": 827,
-    "trending_down": 150,
-    "ranging": 300,
-    "volatile": 150,
-    "unknown": 77
+    "date": "2024-07-22",
+    "total_memories": 212,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2024-11-29",
-    "total_memories": 1603,
-    "trending_up": 875,
-    "trending_down": 159,
-    "ranging": 318,
-    "volatile": 159,
-    "unknown": 80
+    "date": "2024-07-29",
+    "total_memories": 218,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2025-01-02",
-    "total_memories": 1712,
-    "trending_up": 934,
-    "trending_down": 169,
-    "ranging": 339,
-    "volatile": 169,
-    "unknown": 88
+    "date": "2024-08-05",
+    "total_memories": 229,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 1
   },
   {
-    "date": "2025-01-16",
-    "total_memories": 1750,
-    "trending_up": 954,
-    "trending_down": 173,
-    "ranging": 347,
-    "volatile": 173,
-    "unknown": 89
+    "date": "2024-08-12",
+    "total_memories": 234,
+    "trending_up": 1,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2025-01-24",
-    "total_memories": 1842,
-    "trending_up": 1004,
-    "trending_down": 182,
-    "ranging": 365,
-    "volatile": 182,
-    "unknown": 93
+    "date": "2024-08-19",
+    "total_memories": 244,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 2
   },
   {
-    "date": "2025-02-13",
-    "total_memories": 1949,
-    "trending_up": 1062,
-    "trending_down": 193,
-    "ranging": 386,
-    "volatile": 193,
-    "unknown": 98
+    "date": "2024-08-26",
+    "total_memories": 255,
+    "trending_up": 6,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
   },
   {
-    "date": "2025-03-04",
-    "total_memories": 1982,
-    "trending_up": 1080,
-    "trending_down": 196,
-    "ranging": 392,
-    "volatile": 196,
-    "unknown": 100
+    "date": "2024-09-02",
+    "total_memories": 264,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2024-09-09",
+    "total_memories": 271,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-09-16",
+    "total_memories": 279,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-09-23",
+    "total_memories": 286,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2024-09-30",
+    "total_memories": 291,
+    "trending_up": 0,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-10-07",
+    "total_memories": 300,
+    "trending_up": 4,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2024-10-14",
+    "total_memories": 307,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2024-10-21",
+    "total_memories": 314,
+    "trending_up": 0,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2024-10-28",
+    "total_memories": 324,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 2,
+    "volatile": 2,
+    "unknown": 0
+  },
+  {
+    "date": "2024-11-04",
+    "total_memories": 332,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 2
+  },
+  {
+    "date": "2024-11-11",
+    "total_memories": 337,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 1
+  },
+  {
+    "date": "2024-11-18",
+    "total_memories": 344,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2024-11-25",
+    "total_memories": 353,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2024-12-02",
+    "total_memories": 362,
+    "trending_up": 4,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2024-12-09",
+    "total_memories": 369,
+    "trending_up": 4,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
+  },
+  {
+    "date": "2024-12-16",
+    "total_memories": 373,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
+  },
+  {
+    "date": "2024-12-23",
+    "total_memories": 379,
+    "trending_up": 0,
+    "trending_down": 1,
+    "ranging": 2,
+    "volatile": 2,
+    "unknown": 2
+  },
+  {
+    "date": "2024-12-30",
+    "total_memories": 389,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2025-01-06",
+    "total_memories": 392,
+    "trending_up": 1,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-01-13",
+    "total_memories": 401,
+    "trending_up": 1,
+    "trending_down": 0,
+    "ranging": 2,
+    "volatile": 3,
+    "unknown": 0
+  },
+  {
+    "date": "2025-01-20",
+    "total_memories": 410,
+    "trending_up": 5,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 1
+  },
+  {
+    "date": "2025-01-27",
+    "total_memories": 420,
+    "trending_up": 4,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-02-03",
+    "total_memories": 427,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-02-10",
+    "total_memories": 436,
+    "trending_up": 4,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-02-17",
+    "total_memories": 443,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 2,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2025-02-24",
+    "total_memories": 450,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
+  },
+  {
+    "date": "2025-03-03",
+    "total_memories": 459,
+    "trending_up": 5,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-03-10",
+    "total_memories": 466,
+    "trending_up": 4,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
     "date": "2025-03-17",
-    "total_memories": 2067,
-    "trending_up": 1126,
-    "trending_down": 204,
-    "ranging": 409,
-    "volatile": 204,
-    "unknown": 105
+    "total_memories": 475,
+    "trending_up": 7,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2025-03-26",
-    "total_memories": 2121,
-    "trending_up": 1155,
-    "trending_down": 210,
-    "ranging": 420,
-    "volatile": 210,
-    "unknown": 106
+    "date": "2025-03-24",
+    "total_memories": 477,
+    "trending_up": 1,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 1
   },
   {
-    "date": "2025-04-03",
-    "total_memories": 2225,
-    "trending_up": 1212,
-    "trending_down": 220,
-    "ranging": 440,
-    "volatile": 220,
-    "unknown": 112
+    "date": "2025-03-31",
+    "total_memories": 481,
+    "trending_up": 1,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2025-04-10",
-    "total_memories": 2289,
-    "trending_up": 1246,
-    "trending_down": 226,
-    "ranging": 453,
-    "volatile": 226,
-    "unknown": 116
+    "date": "2025-04-07",
+    "total_memories": 489,
+    "trending_up": 6,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2025-04-14",
+    "total_memories": 496,
+    "trending_up": 0,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 0
   },
   {
     "date": "2025-04-21",
-    "total_memories": 2398,
-    "trending_up": 1305,
-    "trending_down": 237,
-    "ranging": 474,
-    "volatile": 237,
-    "unknown": 121
+    "total_memories": 506,
+    "trending_up": 5,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2025-05-06",
-    "total_memories": 2460,
-    "trending_up": 1339,
-    "trending_down": 243,
-    "ranging": 487,
-    "volatile": 243,
-    "unknown": 123
+    "date": "2025-04-28",
+    "total_memories": 512,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2025-05-21",
-    "total_memories": 2528,
-    "trending_up": 1375,
-    "trending_down": 250,
-    "ranging": 500,
-    "volatile": 250,
-    "unknown": 126
+    "date": "2025-05-05",
+    "total_memories": 517,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2025-05-12",
+    "total_memories": 524,
+    "trending_up": 1,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-05-19",
+    "total_memories": 529,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-05-26",
+    "total_memories": 532,
+    "trending_up": 1,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
     "date": "2025-06-02",
-    "total_memories": 2621,
-    "trending_up": 1426,
-    "trending_down": 259,
-    "ranging": 518,
-    "volatile": 259,
-    "unknown": 131
+    "total_memories": 540,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-06-09",
+    "total_memories": 548,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 0
   },
   {
     "date": "2025-06-16",
-    "total_memories": 2672,
-    "trending_up": 1453,
-    "trending_down": 264,
-    "ranging": 528,
-    "volatile": 264,
-    "unknown": 133
+    "total_memories": 555,
+    "trending_up": 5,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
   },
   {
-    "date": "2025-06-26",
-    "total_memories": 2724,
-    "trending_up": 1480,
-    "trending_down": 269,
-    "ranging": 538,
-    "volatile": 269,
-    "unknown": 136
+    "date": "2025-06-23",
+    "total_memories": 562,
+    "trending_up": 5,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 2
   },
   {
-    "date": "2025-07-08",
-    "total_memories": 2787,
-    "trending_up": 1514,
-    "trending_down": 275,
-    "ranging": 550,
-    "volatile": 275,
-    "unknown": 139
+    "date": "2025-06-30",
+    "total_memories": 571,
+    "trending_up": 3,
+    "trending_down": 4,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2025-07-18",
-    "total_memories": 2851,
-    "trending_up": 1547,
-    "trending_down": 281,
-    "ranging": 562,
-    "volatile": 281,
-    "unknown": 143
+    "date": "2025-07-07",
+    "total_memories": 575,
+    "trending_up": 1,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2025-07-31",
-    "total_memories": 2963,
-    "trending_up": 1608,
-    "trending_down": 292,
-    "ranging": 584,
-    "volatile": 292,
-    "unknown": 148
+    "date": "2025-07-14",
+    "total_memories": 585,
+    "trending_up": 6,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2025-09-05",
-    "total_memories": 3044,
-    "trending_up": 1651,
-    "trending_down": 300,
-    "ranging": 600,
-    "volatile": 300,
-    "unknown": 152
+    "date": "2025-07-21",
+    "total_memories": 592,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2025-09-16",
-    "total_memories": 3123,
-    "trending_up": 1694,
-    "trending_down": 308,
-    "ranging": 616,
-    "volatile": 308,
-    "unknown": 154
+    "date": "2025-07-28",
+    "total_memories": 600,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2025-09-25",
-    "total_memories": 3186,
-    "trending_up": 1727,
-    "trending_down": 314,
-    "ranging": 628,
-    "volatile": 314,
-    "unknown": 158
+    "date": "2025-08-04",
+    "total_memories": 608,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2025-10-02",
-    "total_memories": 3285,
-    "trending_up": 1780,
-    "trending_down": 323,
-    "ranging": 647,
-    "volatile": 323,
-    "unknown": 165
+    "date": "2025-08-11",
+    "total_memories": 617,
+    "trending_up": 5,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-08-18",
+    "total_memories": 626,
+    "trending_up": 2,
+    "trending_down": 4,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-08-25",
+    "total_memories": 636,
+    "trending_up": 3,
+    "trending_down": 3,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-09-01",
+    "total_memories": 646,
+    "trending_up": 3,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2025-09-08",
+    "total_memories": 653,
+    "trending_up": 3,
+    "trending_down": 0,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2025-09-15",
+    "total_memories": 661,
+    "trending_up": 1,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 2
+  },
+  {
+    "date": "2025-09-22",
+    "total_memories": 668,
+    "trending_up": 5,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-09-29",
+    "total_memories": 681,
+    "trending_up": 5,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 0
+  },
+  {
+    "date": "2025-10-06",
+    "total_memories": 688,
+    "trending_up": 2,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
     "date": "2025-10-13",
-    "total_memories": 3384,
-    "trending_up": 1834,
-    "trending_down": 333,
-    "ranging": 667,
-    "volatile": 333,
-    "unknown": 168
+    "total_memories": 692,
+    "trending_up": 3,
+    "trending_down": 0,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2025-10-22",
-    "total_memories": 3467,
-    "trending_up": 1878,
-    "trending_down": 341,
-    "ranging": 683,
-    "volatile": 341,
-    "unknown": 172
+    "date": "2025-10-20",
+    "total_memories": 700,
+    "trending_up": 2,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2025-11-06",
-    "total_memories": 3521,
-    "trending_up": 1907,
-    "trending_down": 346,
-    "ranging": 693,
-    "volatile": 346,
-    "unknown": 176
+    "date": "2025-10-27",
+    "total_memories": 707,
+    "trending_up": 1,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 0
+  },
+  {
+    "date": "2025-11-03",
+    "total_memories": 716,
+    "trending_up": 3,
+    "trending_down": 0,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 0
+  },
+  {
+    "date": "2025-11-10",
+    "total_memories": 725,
+    "trending_up": 3,
+    "trending_down": 4,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2025-11-17",
+    "total_memories": 730,
+    "trending_up": 3,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 0
+  },
+  {
+    "date": "2025-11-24",
+    "total_memories": 738,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
   },
   {
     "date": "2025-12-01",
-    "total_memories": 3596,
-    "trending_up": 1947,
-    "trending_down": 354,
-    "ranging": 708,
-    "volatile": 354,
-    "unknown": 178
+    "total_memories": 745,
+    "trending_up": 2,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 0
   },
   {
-    "date": "2025-12-10",
-    "total_memories": 3650,
-    "trending_up": 1976,
-    "trending_down": 359,
-    "ranging": 718,
-    "volatile": 359,
-    "unknown": 181
+    "date": "2025-12-08",
+    "total_memories": 759,
+    "trending_up": 8,
+    "trending_down": 3,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 0
+  },
+  {
+    "date": "2025-12-15",
+    "total_memories": 767,
+    "trending_up": 4,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 0
   },
   {
     "date": "2025-12-22",
-    "total_memories": 3753,
-    "trending_up": 2031,
-    "trending_down": 369,
-    "ranging": 738,
-    "volatile": 369,
-    "unknown": 187
+    "total_memories": 775,
+    "trending_up": 3,
+    "trending_down": 4,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 2
+  },
+  {
+    "date": "2025-12-29",
+    "total_memories": 786,
+    "trending_up": 4,
+    "trending_down": 4,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
   },
   {
     "date": "2026-01-05",
-    "total_memories": 3854,
-    "trending_up": 2086,
-    "trending_down": 379,
-    "ranging": 758,
-    "volatile": 379,
-    "unknown": 191
+    "total_memories": 796,
+    "trending_up": 6,
+    "trending_down": 2,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 2
   },
   {
-    "date": "2026-01-21",
-    "total_memories": 3964,
-    "trending_up": 2145,
-    "trending_down": 390,
-    "ranging": 780,
-    "volatile": 390,
-    "unknown": 196
+    "date": "2026-01-12",
+    "total_memories": 805,
+    "trending_up": 2,
+    "trending_down": 5,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
-    "date": "2026-01-28",
-    "total_memories": 4028,
-    "trending_up": 2179,
-    "trending_down": 396,
-    "ranging": 792,
-    "volatile": 396,
-    "unknown": 199
+    "date": "2026-01-19",
+    "total_memories": 816,
+    "trending_up": 4,
+    "trending_down": 1,
+    "ranging": 2,
+    "volatile": 2,
+    "unknown": 1
+  },
+  {
+    "date": "2026-01-26",
+    "total_memories": 828,
+    "trending_up": 4,
+    "trending_down": 4,
+    "ranging": 0,
+    "volatile": 1,
+    "unknown": 1
+  },
+  {
+    "date": "2026-02-02",
+    "total_memories": 838,
+    "trending_up": 5,
+    "trending_down": 0,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   },
   {
     "date": "2026-02-09",
-    "total_memories": 4114,
-    "trending_up": 2225,
-    "trending_down": 404,
-    "ranging": 809,
-    "volatile": 404,
-    "unknown": 204
+    "total_memories": 844,
+    "trending_up": 2,
+    "trending_down": 0,
+    "ranging": 1,
+    "volatile": 2,
+    "unknown": 1
   },
   {
-    "date": "2026-02-25",
-    "total_memories": 4172,
-    "trending_up": 2256,
-    "trending_down": 410,
-    "ranging": 820,
-    "volatile": 410,
-    "unknown": 206
+    "date": "2026-02-16",
+    "total_memories": 848,
+    "trending_up": 3,
+    "trending_down": 1,
+    "ranging": 0,
+    "volatile": 0,
+    "unknown": 0
+  },
+  {
+    "date": "2026-02-23",
+    "total_memories": 853,
+    "trending_up": 0,
+    "trending_down": 1,
+    "ranging": 1,
+    "volatile": 1,
+    "unknown": 1
   }
 ]

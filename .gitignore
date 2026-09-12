@@ -44,6 +44,7 @@ env/
 .claude/plans/
 .claude/launch.json
 CLAUDE.local.md
+CLAUDE.md
 
 # IDE
 .vscode/
@@ -105,3 +106,15 @@ scripts/research/output/
 # internal task runner files
 tasks*.txt
 tasks-*.md
+
+# private tooling / internal marketing drafts
+.mcp.json
+docs/marketing/
+
+# internal reports (market research, distribution logs, trader fingerprints)
+reports/
+
+# Local archive (contains credentials) and scratch output — never commit
+_archive/
+.hypothesis/
+out/

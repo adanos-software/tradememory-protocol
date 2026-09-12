@@ -1,62 +1,230 @@
 [
   {
-    "trade_id": "cal-001",
+    "trade_id": "DEMO-IM_EURUSD_BUY-0034",
+    "entry_confidence": 0.09,
+    "actual_pnl_r": -0.85,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-VB_EURUSD_BUY-0183",
     "entry_confidence": 0.05,
-    "actual_pnl_r": -3.42,
-    "strategy": "All"
+    "actual_pnl_r": -1.27,
+    "strategy": "VolBreakout"
   },
   {
-    "trade_id": "cal-002",
-    "entry_confidence": 0.15,
-    "actual_pnl_r": -2.8,
-    "strategy": "All"
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0152",
+    "entry_confidence": 0.1,
+    "actual_pnl_r": -1.02,
+    "strategy": "IntradayMomentum"
   },
   {
-    "trade_id": "cal-003",
-    "entry_confidence": 0.25,
-    "actual_pnl_r": -2.5,
-    "strategy": "All"
+    "trade_id": "DEMO-IM_EURUSD_BUY-0120",
+    "entry_confidence": 0.18,
+    "actual_pnl_r": -1.16,
+    "strategy": "IntradayMomentum"
   },
   {
-    "trade_id": "cal-004",
+    "trade_id": "DEMO-IM_EURUSD_BUY-0022",
+    "entry_confidence": 0.1,
+    "actual_pnl_r": -0.73,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-VB_XAUUSD_BUY-0185",
+    "entry_confidence": 0.17,
+    "actual_pnl_r": -0.88,
+    "strategy": "VolBreakout"
+  },
+  {
+    "trade_id": "DEMO-VB_XAUUSD_BUY-0196",
+    "entry_confidence": 0.26,
+    "actual_pnl_r": -0.91,
+    "strategy": "VolBreakout"
+  },
+  {
+    "trade_id": "DEMO-PB_GBPUSD_BUY-0094",
+    "entry_confidence": 0.2,
+    "actual_pnl_r": -1.16,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-PB_GBPUSD_BUY-0144",
+    "entry_confidence": 0.26,
+    "actual_pnl_r": -1.36,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-IM_EURUSD_BUY-0259",
+    "entry_confidence": 0.29,
+    "actual_pnl_r": -1.07,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0086",
     "entry_confidence": 0.35,
-    "actual_pnl_r": -1.92,
-    "strategy": "All"
+    "actual_pnl_r": -1.09,
+    "strategy": "IntradayMomentum"
   },
   {
-    "trade_id": "cal-005",
-    "entry_confidence": 0.45,
-    "actual_pnl_r": -0.24,
-    "strategy": "All"
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0126",
+    "entry_confidence": 0.39,
+    "actual_pnl_r": -0.62,
+    "strategy": "IntradayMomentum"
   },
   {
-    "trade_id": "cal-006",
-    "entry_confidence": 0.55,
-    "actual_pnl_r": 0.04,
-    "strategy": "All"
+    "trade_id": "DEMO-VB_EURUSD_BUY-0080",
+    "entry_confidence": 0.31,
+    "actual_pnl_r": -0.84,
+    "strategy": "VolBreakout"
   },
   {
-    "trade_id": "cal-007",
+    "trade_id": "DEMO-IM_EURUSD_BUY-0023",
+    "entry_confidence": 0.38,
+    "actual_pnl_r": -1.24,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0143",
+    "entry_confidence": 0.47,
+    "actual_pnl_r": -1.13,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_EURUSD_BUY-0004",
+    "entry_confidence": 0.48,
+    "actual_pnl_r": -0.87,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_EURUSD_BUY-0309",
+    "entry_confidence": 0.41,
+    "actual_pnl_r": 1.79,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0243",
+    "entry_confidence": 0.46,
+    "actual_pnl_r": -0.77,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0001",
+    "entry_confidence": 0.51,
+    "actual_pnl_r": 1.47,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-VB_EURUSD_BUY-0042",
+    "entry_confidence": 0.52,
+    "actual_pnl_r": -1.26,
+    "strategy": "VolBreakout"
+  },
+  {
+    "trade_id": "DEMO-PB_XAUUSD_BUY-0044",
+    "entry_confidence": 0.58,
+    "actual_pnl_r": -0.91,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-PB_XAUUSD_BUY-0040",
+    "entry_confidence": 0.53,
+    "actual_pnl_r": 1.06,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0013",
+    "entry_confidence": 0.67,
+    "actual_pnl_r": 1.66,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0168",
+    "entry_confidence": 0.68,
+    "actual_pnl_r": -0.58,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-VB_EURUSD_BUY-0092",
     "entry_confidence": 0.65,
-    "actual_pnl_r": 1.22,
-    "strategy": "All"
+    "actual_pnl_r": 0.41,
+    "strategy": "VolBreakout"
   },
   {
-    "trade_id": "cal-008",
-    "entry_confidence": 0.75,
-    "actual_pnl_r": 3.25,
-    "strategy": "All"
+    "trade_id": "DEMO-VB_XAUUSD_BUY-0108",
+    "entry_confidence": 0.6,
+    "actual_pnl_r": -1.15,
+    "strategy": "VolBreakout"
   },
   {
-    "trade_id": "cal-009",
-    "entry_confidence": 0.85,
-    "actual_pnl_r": 4.94,
-    "strategy": "All"
+    "trade_id": "DEMO-PB_GBPUSD_BUY-0072",
+    "entry_confidence": 0.76,
+    "actual_pnl_r": 0.4,
+    "strategy": "Pullback"
   },
   {
-    "trade_id": "cal-010",
+    "trade_id": "DEMO-VB_XAUUSD_BUY-0091",
+    "entry_confidence": 0.76,
+    "actual_pnl_r": 2.66,
+    "strategy": "VolBreakout"
+  },
+  {
+    "trade_id": "DEMO-PB_GBPUSD_BUY-0083",
+    "entry_confidence": 0.72,
+    "actual_pnl_r": 2.3,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0062",
+    "entry_confidence": 0.79,
+    "actual_pnl_r": -1.16,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-IM_EURUSD_BUY-0221",
+    "entry_confidence": 0.87,
+    "actual_pnl_r": 3.04,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-PB_XAUUSD_BUY-0064",
+    "entry_confidence": 0.8,
+    "actual_pnl_r": 1.27,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0155",
+    "entry_confidence": 0.88,
+    "actual_pnl_r": 1.93,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-PB_XAUUSD_BUY-0011",
+    "entry_confidence": 0.8,
+    "actual_pnl_r": -1.18,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-IM_GBPUSD_BUY-0146",
     "entry_confidence": 0.95,
-    "actual_pnl_r": 8.16,
-    "strategy": "All"
+    "actual_pnl_r": 2.38,
+    "strategy": "IntradayMomentum"
+  },
+  {
+    "trade_id": "DEMO-VB_EURUSD_BUY-0147",
+    "entry_confidence": 0.95,
+    "actual_pnl_r": 2.02,
+    "strategy": "VolBreakout"
+  },
+  {
+    "trade_id": "DEMO-PB_XAUUSD_BUY-0043",
+    "entry_confidence": 0.95,
+    "actual_pnl_r": 1.62,
+    "strategy": "Pullback"
+  },
+  {
+    "trade_id": "DEMO-PB_XAUUSD_BUY-0105",
+    "entry_confidence": 0.95,
+    "actual_pnl_r": 2.17,
+    "strategy": "Pullback"
   }
 ]

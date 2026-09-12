@@ -28,7 +28,28 @@ from .owm_helpers import (
 
 logger = logging.getLogger(__name__)
 
-mcp = FastMCP("tradememory-protocol")
+from . import __version__ as _VERSION
+
+mcp = FastMCP(
+    "tradememory-protocol",
+    version=_VERSION,
+    website_url="https://github.com/mnemox-ai/tradememory-protocol",
+    instructions=(
+        "Decision audit trail and persistent memory for AI trading agents.\n\n"
+        "Before proposing a trade: call `recall_memories` for the symbol and "
+        "current conditions, and `check_trade_legitimacy` (or `compute_dqs`) "
+        "to see whether this strategy has earned full size right now. Weigh "
+        "what comes back — recall is ranked by how those past trades actually "
+        "turned out, so losses in similar conditions surface first.\n\n"
+        "After a trade: call `remember_trade` with the full reasoning, then "
+        "record the outcome when the position closes. Every decision is "
+        "SHA-256 hash-chained; `verify_audit_chain` and `get_daily_root` prove "
+        "the record has not been altered, and `export_audit_trail` produces a "
+        "reviewable log.\n\n"
+        "This server never places orders, moves funds, or touches API keys. "
+        "It records and recalls only."
+    ),
+)
 
 # Shared instance — initialized on first use
 _db: Optional[Database] = None
@@ -109,7 +130,12 @@ def _build_memory_context(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def get_strategy_performance(
     strategy_name: Optional[str] = None,
     symbol: Optional[str] = None,
@@ -177,7 +203,12 @@ async def get_strategy_performance(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def get_trade_reflection(
     trade_id: str,
 ) -> dict:
@@ -216,7 +247,12 @@ async def get_trade_reflection(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": False,
+    "openWorldHint": False,
+})
 async def remember_trade(
     symbol: str,
     direction: str,
@@ -402,7 +438,12 @@ async def remember_trade(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def recall_memories(
     symbol: str,
     market_context: str,
@@ -654,7 +695,12 @@ async def recall_memories(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def get_behavioral_analysis(
     strategy_name: Optional[str] = None,
     symbol: Optional[str] = None,
@@ -699,7 +745,12 @@ async def get_behavioral_analysis(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def get_agent_state() -> dict:
     """Get the current agent affective state (confidence, risk, drawdown).
 
@@ -738,7 +789,12 @@ async def get_agent_state() -> dict:
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": False,
+    "openWorldHint": False,
+})
 async def create_trading_plan(
     trigger_type: str,
     trigger_condition: str,
@@ -806,7 +862,12 @@ async def create_trading_plan(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def check_active_plans(
     context_regime: Optional[str] = None,
     context_atr_d1: Optional[float] = None,
@@ -886,6 +947,49 @@ async def check_active_plans(
         else:
             pending.append(plan_summary)
 
+    # Side effect: persist each trigger event — "the plan fired" is the
+    # alert half of the post-alert behavior metric. Never blocks the check.
+    # Dedup per (plan_id, UTC day): agents poll this tool, and re-logging
+    # the same standing alert every poll would flood the table and inflate
+    # the metric's denominator.
+    if triggered:
+        try:
+            day_start = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00")
+            already_logged = {
+                e.get("linked_trade_id")
+                for e in db.query_decision_events(
+                    tool="plan_triggered", since=day_start, limit=1000
+                )
+            }
+        except Exception as e:
+            logger.warning(f"decision_events dedup query failed: {e}")
+            already_logged = set()
+        for plan_summary in triggered:
+            plan_id = plan_summary.get("plan_id")
+            if plan_id in already_logged:
+                continue
+            try:
+                planned_action = plan_summary.get("planned_action")
+                if isinstance(planned_action, (dict, list)):
+                    planned_action = json.dumps(planned_action)
+                db.insert_decision_event(
+                    tool="plan_triggered",
+                    strategy=None,
+                    symbol=None,
+                    factors={
+                        "plan_id": plan_id,
+                        "trigger_type": plan_summary.get("trigger_type"),
+                        "trigger_condition": plan_summary.get("trigger_condition"),
+                        "priority": plan_summary.get("priority"),
+                        "context_regime": context_regime,
+                        "context_atr_d1": context_atr_d1,
+                    },
+                    recommendation=planned_action,
+                    linked_trade_id=plan_id,
+                )
+            except Exception as e:
+                logger.warning(f"decision_events logging skipped: {e}")
+
     return {
         "active_count": len(triggered) + len(pending),
         "triggered": triggered,
@@ -898,7 +1002,12 @@ async def check_active_plans(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": True,
+})
 async def evolution_fetch_market_data(
     symbol: str,
     timeframe: str = "1h",
@@ -922,7 +1031,12 @@ async def evolution_fetch_market_data(
     return result_copy
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": False,
+    "openWorldHint": False,
+})
 async def evolution_discover_patterns(
     symbol: str,
     timeframe: str = "1h",
@@ -952,7 +1066,12 @@ async def evolution_discover_patterns(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def evolution_run_backtest(
     pattern_dict: dict,
     symbol: str = "BTCUSDT",
@@ -976,7 +1095,12 @@ async def evolution_run_backtest(
     return await run_backtest(pattern_dict, symbol, timeframe, days)
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": False,
+    "openWorldHint": False,
+})
 async def evolution_evolve_strategy(
     symbol: str,
     timeframe: str = "1h",
@@ -1007,7 +1131,12 @@ async def evolution_evolve_strategy(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def evolution_get_log() -> dict:
     """Get the log of past evolution runs from this session.
 
@@ -1024,7 +1153,12 @@ async def evolution_get_log() -> dict:
 # Audit tools — Trading Decision Records (Phase 2)
 # =====================================================================
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def export_audit_trail(
     trade_id: Optional[str] = None,
     strategy: Optional[str] = None,
@@ -1100,7 +1234,12 @@ async def export_audit_trail(
     return {"records": tdrs, "count": len(tdrs)}
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def verify_audit_hash(trade_id: str) -> dict:
     """Verify the integrity of a Trading Decision Record.
 
@@ -1187,7 +1326,12 @@ async def verify_audit_hash(trade_id: str) -> dict:
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def verify_audit_chain(
     from_seq: Optional[int] = None,
     to_seq: Optional[int] = None,
@@ -1215,11 +1359,16 @@ async def verify_audit_chain(
     return result
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": True,
+})
 async def get_daily_root(
     date: str,
     rebuild: bool = False,
-    request_tsa: bool = False,
+    request_tsa: Optional[bool] = None,
     include_token: bool = False,
 ) -> dict:
     """Get (or rebuild) the daily Merkle root for a UTC date.
@@ -1231,10 +1380,11 @@ async def get_daily_root(
     Args:
         date: Date in YYYY-MM-DD format (or full ISO datetime).
         rebuild: If True, recompute and overwrite the stored root.
-        request_tsa: If True (and rebuild=True), submit the root to the
-            configured RFC 3161 TSA (default freetsa.org) and store the
-            returned TimeStampToken. TSA failures are logged but do not
-            abort the rebuild.
+        request_tsa: Whether to submit the rebuilt root to the configured
+            RFC 3161 TSA (default freetsa.org) and store the returned
+            TimeStampToken. None (default) follows the TRADEMEMORY_TSA env
+            setting — ON unless set to "off". TSA failures are logged but
+            do not abort the rebuild.
         include_token: If True, include a base64-encoded `tsa_token`
             in the response (default False — the token can be large).
 
@@ -1292,7 +1442,12 @@ async def get_daily_root(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def validate_strategy(
     file_path: str,
     format: str = "quantconnect",
@@ -1352,7 +1507,12 @@ async def validate_strategy(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def check_trade_legitimacy(
     strategy_name: str,
     symbol: str = "XAUUSD",
@@ -1432,10 +1592,30 @@ async def check_trade_legitimacy(
         "drawdown_pct": round(drawdown_pct, 2),
     }
 
+    # Side effect: persist the gate decision so post-alert behavior change
+    # is measurable later. Must never block the gate itself.
+    try:
+        db.insert_decision_event(
+            tool="check_trade_legitimacy",
+            strategy=strategy_name,
+            symbol=symbol,
+            tier=result.get("tier"),
+            score=result.get("legitimacy_score"),
+            factors=result.get("factors"),
+            recommendation=result.get("recommendation"),
+        )
+    except Exception as e:
+        logger.warning(f"decision_events logging skipped: {e}")
+
     return result
 
 
-@mcp.tool()
+@mcp.tool(annotations={
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+})
 async def compute_dqs(
     symbol: str,
     strategy_name: str,
@@ -1477,6 +1657,26 @@ async def compute_dqs(
         context_regime=context_regime,
         context_atr_d1=context_atr_d1,
     )
+
+    # Side effect: persist the gate decision so post-alert behavior change
+    # is measurable later. Must never block the gate itself.
+    try:
+        db.insert_decision_event(
+            tool="compute_dqs",
+            strategy=strategy_name,
+            symbol=symbol.upper(),
+            tier=result.tier,
+            score=result.score,
+            factors={
+                "factors": result.factors,
+                "direction": direction.lower(),
+                "proposed_lot": proposed_lot_size,
+                "regime": context_regime,
+            },
+            recommendation=result.recommendation,
+        )
+    except Exception as e:
+        logger.warning(f"decision_events logging skipped: {e}")
 
     return {
         "dqs_score": result.score,

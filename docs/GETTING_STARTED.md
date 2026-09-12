@@ -205,7 +205,7 @@ curl -X POST http://localhost:8000/reflect/run_weekly
 ### 4. Full Reference
 
 - [API Reference](API.md) — All 35+ REST endpoints
-- [MCP Tools](../README.md#mcp-tools-19) — All 19 MCP tools
+- [MCP Tools](../README.md#mcp-tools) — All 20 MCP tools
 - [OWM Framework](OWM_FRAMEWORK.md) — Outcome-Weighted Memory theory
 - [Architecture](ARCHITECTURE.md) — System design
 

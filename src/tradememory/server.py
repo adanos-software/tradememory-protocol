@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="TradeMemory Protocol",
     description="AI Agent Trading Memory & Adaptive Decision Layer",
-    version="0.5.2"
+    version="0.5.5"
 )
 
 # CORS middleware — allow dashboard dev server
@@ -668,10 +668,12 @@ async def update_adjustment_status(req: UpdateAdjustmentStatusRequest):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    from . import __version__
+
     return {
         "status": "healthy",
         "service": "TradeMemory Protocol",
-        "version": "0.5.1"
+        "version": __version__,
     }
 
 
@@ -1375,6 +1377,73 @@ async def audit_get_decision_record(trade_id: str):
     return tdr.model_dump(mode="json")
 
 
+@app.post("/audit/root/{date}")
+def build_audit_root(
+    date: str,
+    request_tsa: Optional[bool] = None,
+    force: bool = False,
+):
+    """Build the daily Merkle root for a UTC date (anchored by default).
+
+    `request_tsa=None` follows the TRADEMEMORY_TSA env setting — ON unless
+    set to "off". Protect-by-default: if a root for this date already
+    carries a TSA token, it is returned as-is (`already_anchored: true`)
+    instead of being rebuilt; pass `force=true` to rebuild anyway. This
+    keeps the endpoint idempotent, avoids re-hitting the TSA on retries,
+    and means a plain POST can never destroy an existing anchor.
+
+    Sync (not async) on purpose: the TSA call is blocking urllib — FastAPI
+    runs sync endpoints on the threadpool so the event loop stays free.
+
+    Used by scripts/daily_reflection.py to anchor yesterday's root.
+    """
+    from .audit.chain import ChainBuilder
+
+    db = journal.db
+    try:
+        with db.get_connection() as conn:
+            builder = ChainBuilder(conn)
+
+            if not force:
+                bounds_start, _ = builder._utc_day_bounds(date)
+                existing = conn.execute(
+                    "SELECT period_start, period_end, root_hash, "
+                    "prev_root_hash, record_count, generated_at, tsa_token "
+                    "FROM audit_roots WHERE period_start = ?",
+                    (bounds_start,),
+                ).fetchone()
+                if existing and existing["tsa_token"]:
+                    return {
+                        "period_start": existing["period_start"],
+                        "period_end": existing["period_end"],
+                        "root_hash": existing["root_hash"],
+                        "prev_root_hash": existing["prev_root_hash"],
+                        "record_count": existing["record_count"],
+                        "generated_at": existing["generated_at"],
+                        "has_tsa_token": True,
+                        "already_anchored": True,
+                    }
+
+            root = builder.build_daily_root(date, request_tsa=request_tsa)
+            row = conn.execute(
+                "SELECT tsa_token FROM audit_roots WHERE period_start = ?",
+                (root.period_start,),
+            ).fetchone()
+            has_token = bool(row and row["tsa_token"])
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return {
+        "period_start": root.period_start,
+        "period_end": root.period_end,
+        "root_hash": root.root_hash,
+        "prev_root_hash": root.prev_root_hash,
+        "record_count": root.record_count,
+        "generated_at": root.generated_at,
+        "has_tsa_token": has_token,
+        "already_anchored": False,
+    }
+
+
 @app.get("/audit/export")
 async def audit_export(
     start: Optional[str] = None,
@@ -1494,6 +1563,32 @@ _API_PREFIXES = (
     "patterns/", "adjustments/", "owm/", "evolution/", "health",
 )
 
+def _resolve_static_file(full_path: str, dist_root: Path) -> Optional[Path]:
+    """Map a request path to a regular file inside ``dist_root``.
+
+    Returns the resolved file path when ``full_path`` names an existing
+    regular file under ``dist_root``; returns ``None`` when the path is
+    empty or names nothing servable (caller falls back to the SPA
+    ``index.html``); raises 404 when the path escapes ``dist_root``
+    (``..`` traversal, absolute paths, symlinks pointing outside).
+
+    Containment is checked with :meth:`Path.is_relative_to` (a component
+    boundary check). A plain string ``startswith`` on the resolved dist
+    root was not sufficient: a sibling directory whose name merely shares
+    the prefix (``dist-x/``) passed it (GitHub issue #13).
+    """
+    root = dist_root.resolve()
+    try:
+        candidate = (root / full_path).resolve()
+    except (OSError, RuntimeError, ValueError):
+        raise HTTPException(status_code=404, detail="Not found")
+    if not candidate.is_relative_to(root):
+        raise HTTPException(status_code=404, detail="Not found")
+    if full_path and candidate != root and candidate.is_file():
+        return candidate
+    return None
+
+
 if _dashboard_dist.exists():
     _assets_dir = _dashboard_dist / "assets"
     if _assets_dir.exists():
@@ -1505,12 +1600,10 @@ if _dashboard_dist.exists():
         """Catch-all: serve SPA index.html for client-side routing."""
         if full_path.startswith(_API_PREFIXES):
             raise HTTPException(status_code=404, detail="Not found")
-        # Serve static files (e.g. vite.svg) if they exist on disk
-        # Path traversal protection: resolve and verify within dashboard_dist
-        static_file = (_dashboard_dist / full_path).resolve()
-        if not str(static_file).startswith(str(_dashboard_dist.resolve())):
-            raise HTTPException(status_code=404, detail="Not found")
-        if full_path and static_file.exists() and static_file.is_file():
+        # Serve static files (e.g. vite.svg) if they exist on disk.
+        # Path traversal protection lives in _resolve_static_file (#13).
+        static_file = _resolve_static_file(full_path, _dashboard_dist)
+        if static_file is not None:
             return FileResponse(str(static_file))
         return FileResponse(str(_dashboard_dist / "index.html"))
 

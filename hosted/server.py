@@ -19,9 +19,11 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import parse_qs
 
-from fastapi import Depends, FastAPI, HTTPException, Header, Query
+from fastapi import Depends, FastAPI, HTTPException, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from tradememory.mcp_server import mcp
@@ -36,7 +38,7 @@ mcp_http = mcp.http_app(path="/mcp", transport="streamable-http", stateless_http
 app = FastAPI(
     title="TradeMemory Hosted API",
     description="Multi-tenant AI Trading Memory API",
-    version="0.5.0",
+    version="0.5.4",
     lifespan=mcp_http.lifespan,
 )
 
@@ -52,6 +54,120 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+# MCP methods that expose no user data and stay open, so registries and
+# uptime checks can discover the server. Tool *schemas* are already public
+# (they're in the repo); tool *calls* touch memory and stay gated.
+MCP_PUBLIC_METHODS = {
+    "initialize",
+    "notifications/initialized",
+    "ping",
+    "tools/list",
+    "resources/list",
+    "resources/templates/list",
+    "prompts/list",
+}
+
+
+def _rpc_method(body: bytes) -> Optional[str]:
+    """Extract the JSON-RPC method name from a request body."""
+    try:
+        payload = json.loads(body or b"{}")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if isinstance(payload, list):  # JSON-RPC batch: gate unless ALL are public
+        methods = [m.get("method") for m in payload if isinstance(m, dict)]
+        return methods[0] if len(set(methods)) == 1 else "batch/mixed"
+    return payload.get("method") if isinstance(payload, dict) else None
+
+
+class MCPAuthMiddleware:
+    """Gate MCP tool calls, leave discovery open.
+
+    Deliberately pure ASGI rather than Starlette's BaseHTTPMiddleware:
+    the MCP endpoint answers over server-sent events, and
+    BaseHTTPMiddleware breaks streaming responses (the client gets headers
+    and then hangs — which is exactly how registry probes time out).
+
+    Only POST carries JSON-RPC calls; GET opens the event stream and
+    DELETE ends a session, neither of which can return stored data on
+    their own, so they pass straight through.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if (
+            scope["type"] != "http"
+            or scope.get("method") != "POST"
+            or not scope.get("path", "").startswith("/mcp")
+        ):
+            await self.app(scope, receive, send)
+            return
+
+        body = b""
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return
+            body += message.get("body", b"")
+            if not message.get("more_body", False):
+                break
+
+        if _rpc_method(body) not in MCP_PUBLIC_METHODS:
+            headers = {
+                k.decode("latin-1").lower(): v.decode("latin-1")
+                for k, v in scope.get("headers", [])
+            }
+            auth = headers.get("authorization", "")
+            api_key = (
+                auth.split(" ", 1)[1].strip()
+                if auth.lower().startswith("bearer ")
+                else ""
+            )
+            if not api_key:
+                # Registry gateways (Smithery) forward user config as query
+                # params rather than headers. Accepted for compatibility;
+                # the Authorization header is preferred because query
+                # strings land in access logs.
+                query = parse_qs(scope.get("query_string", b"").decode("latin-1"))
+                api_key = (query.get("apiKey") or query.get("api_key") or [""])[0].strip()
+            if not api_key.startswith(("tm_live_", "tm_test_")) or not get_db().validate_key(api_key):
+                payload = json.dumps({
+                    "error": "unauthorized",
+                    "message": "This MCP method requires a Bearer API key "
+                               "(discovery methods such as tools/list are open)",
+                }).encode()
+                await send({
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"content-length", str(len(payload)).encode()),
+                    ],
+                })
+                await send({"type": "http.response.body", "body": payload})
+                return
+
+        replayed = False
+
+        async def replay():
+            # Hand the buffered body over once, then fall back to the real
+            # transport so the app still sees disconnect events (returning
+            # the body forever makes streaming handlers wait for an end
+            # that never comes).
+            nonlocal replayed
+            if not replayed:
+                replayed = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            return await receive()
+
+        await self.app(scope, replay, send)
+
+
+app.add_middleware(MCPAuthMiddleware)
 
 
 # ========== Database ==========
@@ -422,7 +538,7 @@ class RecallTradesResponse(BaseModel):
 @app.get("/api/v1/health")
 async def health():
     """Health check — no auth required."""
-    return {"status": "healthy", "version": "0.5.0"}
+    return {"status": "healthy", "version": "0.5.4"}
 
 
 @app.post("/api/v1/trades", status_code=201, response_model=StoreTradeResponse)

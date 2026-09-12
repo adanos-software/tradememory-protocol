@@ -11,7 +11,7 @@ Usage:
 import argparse
 import os
 import requests
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -42,6 +42,38 @@ def send_discord(title: str, message: str, color: int = 0x9B59B6):
         requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
     except Exception:
         pass  # Never fail the script for a notification issue
+
+
+def anchor_yesterday_root(target_date: date = None) -> str:
+    """Build + RFC 3161 timestamp the last COMPLETED UTC day's audit root.
+
+    UTC, not local time: root periods are UTC day bounds, and "local
+    yesterday" on a UTC+N machine can still be an unfinished UTC day —
+    anchoring that would freeze a half-day root. When `target_date` is
+    given (backfill runs with --date), anchor the day before it instead.
+
+    Non-fatal: the reflection must not fail because anchoring did.
+    Returns a one-line status string for the report / notification.
+    """
+    if target_date is not None:
+        yesterday = (target_date - timedelta(days=1)).isoformat()
+    else:
+        yesterday = (
+            datetime.now(timezone.utc).date() - timedelta(days=1)
+        ).isoformat()
+    try:
+        resp = requests.post(f"{TRADEMEMORY_API}/audit/root/{yesterday}", timeout=30)
+        if resp.ok:
+            data = resp.json()
+            anchored = "RFC 3161 anchored" if data.get("has_tsa_token") else "local only"
+            root_hash = (data.get("root_hash") or "")[:16]
+            return (
+                f"Audit root {yesterday}: {root_hash}... "
+                f"({data.get('record_count', 0)} records, {anchored})"
+            )
+        return f"Audit root {yesterday}: build failed (HTTP {resp.status_code})"
+    except Exception as e:
+        return f"Audit root {yesterday}: skipped ({type(e).__name__})"
 
 
 def generate_daily_reflection(target_date: date = None) -> str:
@@ -248,6 +280,13 @@ def main():
     else:
         target_date = date.fromisoformat(args.date) if args.date else None
         summary = generate_daily_reflection(target_date)
+
+        # Anchor the last completed UTC day's audit root (v0.5.3+):
+        # the root gets an independent RFC 3161 timestamp by default.
+        root_status = anchor_yesterday_root(target_date)
+        print(f"\n{root_status}")
+        if summary:
+            summary += f"\n\n{root_status}"
 
         if summary:
             d = target_date or date.today()

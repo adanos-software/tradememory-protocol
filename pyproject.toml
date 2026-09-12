@@ -1,6 +1,6 @@
 [project]
 name = "tradememory-protocol"
-version = "0.5.2"
+version = "0.5.5"
 description = "Decision audit trail + persistent memory for AI trading agents. SHA-256 tamper detection, outcome-weighted recall, strategy evolution via MCP."
 authors = [{name = "Mnemox", email = "contact@mnemox.ai"}]
 license = {text = "MIT"}
@@ -18,19 +18,19 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "fastmcp>=2.0.0",
-    "fastapi>=0.109.0",
+    "fastmcp>=3.2.0,<4",
+    "fastapi>=0.109.1",
     "uvicorn>=0.27.0",
     "pydantic>=2.5.3",
-    "python-dotenv>=1.0.0",
-    "requests>=2.31.0",
-    "click>=8.0.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.33.0",
+    "click>=8.3.3",
     "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
 test = [
-    "pytest>=7.4.4",
+    "pytest>=9.0.3",
     "pytest-asyncio>=0.23.3",
     "pytest-cov>=4.1.0",
     "httpx>=0.26.0",
@@ -43,10 +43,6 @@ lint = [
 dev = [
     "tradememory-protocol[test,lint]",
     "pre-commit>=3.6.0",
-]
-dashboard = [
-    "streamlit",
-    "plotly",
 ]
 replay = [
     "instructor>=1.0.0",

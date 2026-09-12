@@ -1,6 +1,6 @@
 # TradeMemory Protocol — Known Limitations & Roadmap
 
-> Last updated: 2026-05-14 · Applies to: v0.5.2 (post-audit-chain refit)
+> Last updated: 2026-07-29 · Applies to: v0.5.2 (post-audit-chain refit)
 
 We publish this document because partners, regulators, and the open-source
 community deserve to know what TradeMemory does **today**, what is **research-
@@ -50,12 +50,17 @@ The goal is to be a partner you can build on without surprises later.
 
 ## 2. Architecture maturity
 
-### Today (v0.5.2)
+### Today (v0.5.4)
 - **Single-tenant SQLite** is the production storage layer (`db.py`).
 - FastAPI REST server binds to `127.0.0.1` only — there is an explicit
   comment in `server.py` line ~40 noting this.
 - **No bearer-token auth, no API keys, no RBAC, no rate limiting.**
 - Memory is local-process — no horizontal scaling.
+- **`decision_events` (v0.5.3+) is single-tenant like every other memory
+  table.** If the shared MCP app is mounted in a multi-tenant host, gate
+  events from all tenants land in one table with no tenant scoping — do
+  not expose `query_decision_events` cross-tenant until the tenancy work
+  above lands.
 
 ### In progress
 - A second PostgreSQL stack lives in parallel under `database.py`,
@@ -96,11 +101,13 @@ The goal is to be a partner you can build on without surprises later.
   that can be published externally.
 
 ### What is NOT in v0.5.2
-- **RFC 3161 TSA timestamping** — daily roots are local-only today. A
-  `tsa_token BLOB` column is reserved on `audit_roots` for the
-  TimeStampToken; the client code is on the 1-2 week roadmap.
-- **External anchoring** (OpenTimestamps / blockchain / public log). On the
-  60-day roadmap.
+- **RFC 3161 TSA timestamping** — shipped (`audit/tsa.py`, zero extra
+  dependencies) and **on by default since v0.5.3**: daily root builds
+  submit the root hash to the configured TSA (default freetsa.org;
+  community-run, not eIDAS-qualified — swap via `TRADEMEMORY_TSA_URL`).
+  Opt out with `TRADEMEMORY_TSA=off`. TSA failures never block the chain.
+- **External anchoring beyond TSA** (OpenTimestamps / blockchain / public
+  log). Still on the roadmap.
 - **zkML proof of inference** — proving "this strategy was actually run on
   this market context to produce this decision" is on the 90-day roadmap
   via EZKL integration. The audit chain proves *memory existed*; zkML
@@ -170,10 +177,10 @@ opposed the proposed action. This was misleading and we have fixed it.
 - **No HA / replication.** SQLite is a single file. Backup is `cp tradememory.db tradememory.db.bak`.
 - **No baseline metrics endpoint** (no Prometheus / OTEL). The `/health`
   endpoint exists; serious observability is on the roadmap.
-- **CHANGELOG** is being rewritten — it stopped at v0.5.0; v0.5.1 and v0.5.2
-  entries are being added in this same release cycle.
+- **CHANGELOG** is current through v0.5.2 (0.5.1 and 0.5.2 sections added
+  2026-07-29).
 - **db.py uses raw `CREATE TABLE IF NOT EXISTS`** — this violates our own
-  `.claude/rules/task-01-database.md` rule. The PG track uses Alembic
+  internal migration checklist. The PG track uses Alembic
   properly; the SQLite layer will follow when we converge stacks.
 
 ---

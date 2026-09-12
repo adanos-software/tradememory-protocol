@@ -7,16 +7,18 @@
 <div align="center">
 
 [![PyPI](https://img.shields.io/pypi/v/tradememory-protocol?style=flat-square&color=blue)](https://pypi.org/project/tradememory-protocol/)
-[![Tests](https://img.shields.io/badge/tests-1%2C324_passed-brightgreen?style=flat-square)](https://github.com/mnemox-ai/tradememory-protocol/actions)
-[![MCP Tools](https://img.shields.io/badge/MCP_tools-19-blueviolet?style=flat-square)](https://smithery.ai/server/io.github.mnemox-ai/tradememory-protocol)
-[![Smithery](https://img.shields.io/badge/Smithery-listed-orange?style=flat-square)](https://smithery.ai/server/io.github.mnemox-ai/tradememory-protocol)
+[![Tests](https://img.shields.io/github/actions/workflow/status/mnemox-ai/tradememory-protocol/ci.yml?branch=master&style=flat-square&label=tests)](https://github.com/mnemox-ai/tradememory-protocol/actions/workflows/ci.yml)
+[![MCP Tools](https://img.shields.io/badge/MCP_tools-20-blueviolet?style=flat-square)](https://smithery.ai/server/mnemox-ai/tradememory-protocol)
+[![Smithery](https://img.shields.io/badge/Smithery-listed-orange?style=flat-square)](https://smithery.ai/server/mnemox-ai/tradememory-protocol)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](https://opensource.org/licenses/MIT)
 
-[快速開始](GETTING_STARTED.md) | [應用場景](USE_CASES.md) | [API 參考](API.md) | [OWM 框架](OWM_FRAMEWORK.md) | [English](../README.md)
+[快速開始](GETTING_STARTED.md) | [應用場景](USE_CASES.md) | [API 參考](API.md) | [OWM 框架](OWM_FRAMEWORK.md) | [限制聲明](../LIMITATIONS.md) | [English](../README.md)
 
 </div>
 
 ---
+
+> **專案狀態（2026 年 8 月）：** 功能已完備，目前為**維護模式**：bug 與安全性回報仍會處理，不再規劃新功能與 hosted 服務。付費服務見[交易紀錄統計分析](#交易紀錄統計分析)。
 
 **你的交易 AI 有失憶症。監管機構開始注意到了。**
 
@@ -26,7 +28,7 @@ AI 交易堆疊缺少一層。每個 MCP server 都處理執行——下單、�
 
 你的 agent 可以買 100 股 AAPL，但無法回答：*「上次我在這個條件下買 AAPL，發生了什麼？」*
 
-**TradeMemory 就是那個記憶層。** 一個 `pip install`，你的 AI agent 就能記住每一筆交易、每一個結果、每一個錯誤——搭配 SHA-256 防竄改的審計軌跡。
+**TradeMemory 就是那個記憶層。** 一個 `pip install`，你的 AI agent 就能記住每一筆交易、每一個結果、每一個錯誤——搭配 SHA-256 可驗竄改的審計軌跡。
 
 已在生產環境中被交易者使用：每次開倉前跑「交易前檢查清單」，以及每日記錄數千個決策的 EA 系統。
 
@@ -37,6 +39,12 @@ AI 交易堆疊缺少一層。每個 MCP server 都處理執行——下單、�
 - **安全護欄：** 信心追蹤、回撤告警、連敗偵測——系統告訴你什麼時候該停下來
 
 相容任何市場（股票、外匯、加密貨幣、期貨）、任何券商、任何 AI 平台。TradeMemory 不執行交易也不碰你的資金——它只負責記錄和回憶。
+
+## 看看介面長什麼樣
+
+**[tradememory-dashboard.onrender.com](https://tradememory-dashboard.onrender.com)** 是跑在示範資料集上的儀表板，不用安裝任何東西。
+
+這是**介面預覽，不是績效紀錄**：裡面的交易是合成的，畫面上每個數字都有標註。想看記憶層在終端機裡實際做什麼，跑 `pip install tradememory-protocol && tradememory demo --fast`，它會重播 30 筆交易，並展示從中導出的回憶與參數調整。
 
 ## 快速開始
 
@@ -84,7 +92,7 @@ docker compose up -d
 |---|---|---|---|
 | **市場** | 股票（AAPL、TSLA…） | XAUUSD（黃金） | 多資產 |
 | **使用方式** | 每次開倉前跑「交易前檢查清單」 | 從 MT5 自動同步 | 完整決策審計軌跡 |
-| **核心價值** | 紀律系統——每個決策前先查記憶 | 記錄訊號被阻擋的原因，不只是執行結果 | SHA-256 防竄改紀錄供監管提交 |
+| **核心價值** | 紀律系統——每個決策前先查記憶 | 記錄訊號被阻擋的原因，不只是執行結果 | SHA-256 可驗竄改紀錄供監管提交 |
 | **詳細說明** | [閱讀更多 →](USE_CASES.md#case-1-us-equity-trader--pre-flight-workflow) | [閱讀更多 →](USE_CASES.md#case-2-forex-ea-system--automated-memory-loop) | [閱讀更多 →](USE_CASES.md#case-3-compliance-first-fund--audit-trail) |
 
 ## 運作方式
@@ -109,41 +117,27 @@ docker compose up -d
 | **審計** | `export_audit_trail` · `verify_audit_hash` | SHA-256 竄改偵測 + 批次匯出 |
 
 <details>
-<summary>全部 17 個 MCP 工具 + REST API</summary>
+<summary>全部 20 個 MCP 工具 + REST API</summary>
 
 | 類別 | 工具 |
 |------|------|
 | **核心記憶** | `get_strategy_performance` · `get_trade_reflection` |
 | **OWM 認知** | `remember_trade` · `recall_memories` · `get_behavioral_analysis` · `get_agent_state` · `create_trading_plan` · `check_active_plans` |
-| **風險與治理** | `check_trade_legitimacy` · `validate_strategy` |
+| **風險與治理** | `check_trade_legitimacy` · `validate_strategy` · `compute_dqs` |
 | **Evolution** | `evolution_fetch_market_data` · `evolution_discover_patterns` · `evolution_run_backtest` · `evolution_evolve_strategy` · `evolution_get_log` |
-| **審計** | `export_audit_trail` · `verify_audit_hash` |
+| **審計** | `export_audit_trail` · `verify_audit_hash` · `verify_audit_chain` · `get_daily_root` |
 
 **REST API：** 35+ 端點，涵蓋交易記錄、反思、風險、MT5 同步、OWM、Evolution Engine 和審計。[完整參考 →](API.md)
 
 </details>
 
-## 定價
+## 交易紀錄統計分析
 
-| | Community | Pro | Enterprise |
-|---|---|---|---|
-| **價格** | **免費** | **$29/月**（即將推出） | **洽詢我們** |
-| MCP 工具 | 17 個工具 | 17 個工具 | 17 個工具 |
-| 儲存 | SQLite，自架 | Hosted API | 私有部署 |
-| Dashboard | — | Web dashboard | 客製化 dashboard |
-| 合規 | 審計軌跡含括 | 審計軌跡含括 | 合規報告 + SLA |
-| 支援 | GitHub Issues | 優先支援 | 專屬支援 |
-| | [立即開始 →](GETTING_STARTED.md) | *即將推出* | [dev@mnemox.ai](mailto:dev@mnemox.ai) |
+TradeMemory 本身免費、自行架設。維護者提供的付費服務是**針對你自己交易紀錄的統計分析**：匯出 MT4/MT5 歷史紀錄，取得一份描述性統計報告（虧損集中在哪幾筆、虧損後部位如何變化、強制平倉結構、每筆實際承擔的風險），加上一次語音講解。
 
-### 需要整合協助？
-
-正在建立交易 AI agent，想要經過實戰驗證的記憶架構？
-
-**免費 30 分鐘策略諮詢** — 我們會為你的 agent 規劃記憶需求，設計適合你工作流程的護欄。
+只描述已發生的交易：不提供進出場訊號、不提供投資建議、不做任何獲利承諾。檔案交付後即刪除。
 
 [dev@mnemox.ai](mailto:dev@mnemox.ai) | [預約通話](https://calendly.com/johnson90207/30min)
-
-> *我們已協助交易者建立交易前檢查清單、串接 MT5/Binance，並為外匯、美股、加密貨幣設計客製化護欄。*
 
 ## Enterprise 與合規
 
@@ -170,17 +164,17 @@ GET /audit/export?strategy=VolBreakout&start=2026-03-01&format=jsonl
 
 - **絕不碰 API 金鑰。** TradeMemory 不執行交易、不移動資金、不存取錢包。
 - **只讀取和記錄。** 你的 agent 把決策上下文傳給 TradeMemory。它儲存它。就這樣。
-- **無外部網路呼叫。** Server 在本地運行。不會將資料傳送給第三方。
+- **Local-first。** 唯一的對外呼叫是每日稽核 root 的 RFC 3161 信任時間戳——送出的只是 32 bytes 的雜湊，不含任何交易資料（預設開啟，可用 `TRADEMEMORY_TSA=off` 關閉）。其餘資料不離開你的機器。
 - **SHA-256 竄改偵測。** 每筆紀錄在建立時就計算雜湊。可隨時驗證完整性。
-- **1,324 測試通過。** 完整測試套件與 CI。
+- **1,400+ 測試通過。** 完整測試套件與 CI。
 
 ## 研究現況
 
 TradeMemory 的 OWM 框架基於認知科學（Tulving 1972）和強化學習（Schaul et al. 2015）。目前狀態：
 
-- **OWM 五因子評分：** 已實作，已測試（1,300+ tests）
+- **OWM 五因子評分：** 已實作，已測試（1,400+ tests）
 - **統計驗證：** DSR、MBL 已實作（Bailey-de Prado 2014）
-- **審計軌跡：** SHA-256 防竄改 TDR
+- **審計軌跡：** SHA-256 可驗竄改 TDR
 - **進化引擎：** 研究階段（策略生成可運作，統計門檻通過率仍在優化中）
 - **混合召回：** OWM-only 模式啟用中，embedding 設定後可啟用向量融合
 - **實證驗證：** 進行中（n=40 筆交易，目標 n>=100 以達統計顯著性）
