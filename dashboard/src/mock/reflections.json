@@ -1,138 +1,138 @@
 [
   {
-    "date": "2025-10-06",
-    "type": "weekly_review",
-    "grade": "B",
-    "strategy": "VolBreakout",
-    "summary": "Week of 2025-10-06: 72 trades, PnL $+11150.11, WR 57%. Primary strategy: VolBreakout.",
-    "full_path": "weekly_reviews/2025-10-06_weekly.md"
-  },
-  {
     "date": "2025-10-13",
     "type": "weekly_review",
     "grade": "A",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-10-13: 97 trades, PnL $+22479.33, WR 70%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2025-10-13: 4 trades, PnL $+974, PF 6.0, WR 75%. Worst trade -0.78R in London.",
     "full_path": "weekly_reviews/2025-10-13_weekly.md"
   },
   {
     "date": "2025-10-20",
     "type": "weekly_review",
-    "grade": "D",
-    "strategy": "VolBreakout",
-    "summary": "Week of 2025-10-20: 16 trades, PnL $-2306.40, WR 0%. Primary strategy: VolBreakout.",
+    "grade": "B",
+    "strategy": "IntradayMomentum",
+    "summary": "Week of 2025-10-20: 5 trades, PnL $+238, PF 1.41, WR 40%. Worst trade -1.05R in Asia.",
     "full_path": "weekly_reviews/2025-10-20_weekly.md"
   },
   {
     "date": "2025-10-27",
     "type": "weekly_review",
-    "grade": "B",
-    "strategy": "VolBreakout",
-    "summary": "Week of 2025-10-27: 19 trades, PnL $+3206.45, WR 58%. Primary strategy: VolBreakout.",
+    "grade": "D",
+    "strategy": "Pullback",
+    "summary": "Week of 2025-10-27: 5 trades, PnL $-476, PF 0.52, WR 20%. Worst trade -1.19R in Asia.",
     "full_path": "weekly_reviews/2025-10-27_weekly.md"
   },
   {
     "date": "2025-11-03",
     "type": "weekly_review",
-    "grade": "A",
+    "grade": "C",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-11-03: 26 trades, PnL $+5569.67, WR 100%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2025-11-03: 6 trades, PnL $-63, PF 0.9, WR 50%. Worst trade -0.99R in Asia.",
     "full_path": "weekly_reviews/2025-11-03_weekly.md"
   },
   {
     "date": "2025-11-10",
     "type": "weekly_review",
-    "grade": "B",
-    "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-11-10: 54 trades, PnL $+7423.25, WR 46%. Primary strategy: IntradayMomentum.",
+    "grade": "D",
+    "strategy": "Pullback",
+    "summary": "Week of 2025-11-10: 8 trades, PnL $-155, PF 0.88, WR 38%. Worst trade -1.24R in London.",
     "full_path": "weekly_reviews/2025-11-10_weekly.md"
   },
   {
     "date": "2025-11-17",
     "type": "weekly_review",
+    "grade": "A",
+    "strategy": "IntradayMomentum",
+    "summary": "Week of 2025-11-17: 5 trades, PnL $+827, PF 2.39, WR 60%. Worst trade -1.27R in Asia.",
+    "full_path": "weekly_reviews/2025-11-17_weekly.md"
+  },
+  {
+    "date": "2025-11-24",
+    "type": "weekly_review",
     "grade": "D",
     "strategy": "VolBreakout",
-    "summary": "Week of 2025-11-17: 16 trades, PnL $-4760.76, WR 0%. Primary strategy: VolBreakout.",
-    "full_path": "weekly_reviews/2025-11-17_weekly.md"
+    "summary": "Week of 2025-11-24: 5 trades, PnL $-362, PF 0.57, WR 40%. Worst trade -1.26R in London.",
+    "full_path": "weekly_reviews/2025-11-24_weekly.md"
   },
   {
     "date": "2025-12-01",
     "type": "weekly_review",
-    "grade": "D",
+    "grade": "C",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-12-01: 35 trades, PnL $-5808.18, WR 11%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2025-12-01: 6 trades, PnL $-8, PF 0.99, WR 33%. Worst trade -1.22R in London.",
     "full_path": "weekly_reviews/2025-12-01_weekly.md"
   },
   {
     "date": "2025-12-08",
     "type": "weekly_review",
     "grade": "A",
-    "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-12-08: 36 trades, PnL $+2068.20, WR 72%. Primary strategy: IntradayMomentum.",
+    "strategy": "VolBreakout",
+    "summary": "Week of 2025-12-08: 11 trades, PnL $+2,169, PF 3.14, WR 73%. Worst trade -1.47R in Asia.",
     "full_path": "weekly_reviews/2025-12-08_weekly.md"
   },
   {
     "date": "2025-12-15",
     "type": "weekly_review",
-    "grade": "D",
+    "grade": "C",
     "strategy": "VolBreakout",
-    "summary": "Week of 2025-12-15: 51 trades, PnL $-14213.35, WR 0%. Primary strategy: VolBreakout.",
+    "summary": "Week of 2025-12-15: 8 trades, PnL $+187, PF 1.19, WR 50%. Worst trade -1.08R in London.",
     "full_path": "weekly_reviews/2025-12-15_weekly.md"
   },
   {
     "date": "2025-12-22",
     "type": "weekly_review",
-    "grade": "B",
-    "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-12-22: 52 trades, PnL $+2826.64, WR 42%. Primary strategy: IntradayMomentum.",
+    "grade": "C",
+    "strategy": "VolBreakout",
+    "summary": "Week of 2025-12-22: 8 trades, PnL $-88, PF 0.94, WR 38%. Worst trade -1.42R in London.",
     "full_path": "weekly_reviews/2025-12-22_weekly.md"
   },
   {
     "date": "2025-12-29",
     "type": "weekly_review",
-    "grade": "B",
+    "grade": "C",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2025-12-29: 65 trades, PnL $+260.11, WR 28%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2025-12-29: 9 trades, PnL $-123, PF 0.91, WR 44%. Worst trade -1.21R in Asia.",
     "full_path": "weekly_reviews/2025-12-29_weekly.md"
   },
   {
     "date": "2026-01-05",
     "type": "weekly_review",
-    "grade": "A",
-    "strategy": "VolBreakout",
-    "summary": "Week of 2026-01-05: 16 trades, PnL $+1932.20, WR 100%. Primary strategy: VolBreakout.",
+    "grade": "B",
+    "strategy": "IntradayMomentum",
+    "summary": "Week of 2026-01-05: 10 trades, PnL $+731, PF 1.76, WR 60%. Worst trade -1.12R in London.",
     "full_path": "weekly_reviews/2026-01-05_weekly.md"
   },
   {
     "date": "2026-01-12",
     "type": "weekly_review",
-    "grade": "B",
-    "strategy": "IntradayMomentum",
-    "summary": "Week of 2026-01-12: 30 trades, PnL $+8225.58, WR 40%. Primary strategy: IntradayMomentum.",
+    "grade": "D",
+    "strategy": "VolBreakout",
+    "summary": "Week of 2026-01-12: 9 trades, PnL $-738, PF 0.6, WR 22%. Worst trade -1.29R in London.",
     "full_path": "weekly_reviews/2026-01-12_weekly.md"
   },
   {
     "date": "2026-01-19",
     "type": "weekly_review",
-    "grade": "A",
+    "grade": "B",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2026-01-19: 80 trades, PnL $+24711.94, WR 78%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2026-01-19: 9 trades, PnL $+335, PF 1.27, WR 44%. Worst trade -1.36R in Asia.",
     "full_path": "weekly_reviews/2026-01-19_weekly.md"
   },
   {
     "date": "2026-01-26",
     "type": "weekly_review",
-    "grade": "B",
-    "strategy": "IntradayMomentum",
-    "summary": "Week of 2026-01-26: 77 trades, PnL $+20744.10, WR 58%. Primary strategy: IntradayMomentum.",
+    "grade": "C",
+    "strategy": "VolBreakout",
+    "summary": "Week of 2026-01-26: 9 trades, PnL $-22, PF 0.98, WR 44%. Worst trade -1.29R in NY.",
     "full_path": "weekly_reviews/2026-01-26_weekly.md"
   },
   {
     "date": "2026-02-02",
     "type": "weekly_review",
     "grade": "A",
-    "strategy": "VolBreakout",
-    "summary": "Week of 2026-02-02: 48 trades, PnL $+8019.14, WR 100%. Primary strategy: VolBreakout.",
+    "strategy": "IntradayMomentum",
+    "summary": "Week of 2026-02-02: 7 trades, PnL $+1,272, PF 3.76, WR 71%. Worst trade -0.97R in London.",
     "full_path": "weekly_reviews/2026-02-02_weekly.md"
   },
   {
@@ -140,23 +140,23 @@
     "type": "weekly_review",
     "grade": "D",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2026-02-09: 18 trades, PnL $-443.70, WR 0%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2026-02-09: 5 trades, PnL $-282, PF 0.49, WR 40%. Worst trade -0.83R in Asia.",
     "full_path": "weekly_reviews/2026-02-09_weekly.md"
   },
   {
     "date": "2026-02-16",
     "type": "weekly_review",
-    "grade": "D",
+    "grade": "A",
     "strategy": "IntradayMomentum",
-    "summary": "Week of 2026-02-16: 18 trades, PnL $-442.98, WR 0%. Primary strategy: IntradayMomentum.",
+    "summary": "Week of 2026-02-16: 4 trades, PnL $+941, PF 4.43, WR 75%. Worst trade -1.1R in Asia.",
     "full_path": "weekly_reviews/2026-02-16_weekly.md"
   },
   {
     "date": "2026-02-23",
     "type": "weekly_review",
-    "grade": "C",
-    "strategy": "IntradayMomentum",
-    "summary": "Week of 2026-02-23: 38 trades, PnL $-1177.60, WR 32%. Primary strategy: IntradayMomentum.",
+    "grade": "D",
+    "strategy": "VolBreakout",
+    "summary": "Week of 2026-02-23: 3 trades, PnL $-698, PF 0.0, WR 0%. Worst trade -1.01R in Asia.",
     "full_path": "weekly_reviews/2026-02-23_weekly.md"
   }
 ]

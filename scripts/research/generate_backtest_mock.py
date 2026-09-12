@@ -1,11 +1,40 @@
 """
 Generate dashboard mock JSON files from backtest_v1.db.
 
+DEPRECATED - DO NOT RUN. Use scripts/research/generate_demo_mock.py instead.
+=========================================================================
+Running this overwrites dashboard/src/mock/*.json with a set that does not
+survive inspection:
+
+  * cumulative PnL reached -29,488 against a stated 10,000 account, so 16
+    points on the equity curve had equity <= 0 (the account was bust)
+  * Overview reported max_drawdown_pct 0.4066 while the equity series' own
+    drawdown_pct field peaked at 0.7013
+  * Overview reported 10,169 trades while the chart's own counter, and the sum
+    of the three strategy files, both ended at 4,102
+  * strategy-im and strategy-pb named the same session as best AND worst
+  * flat $100 risk per trade meant total PnL 276,535 = +2,765R over 4,102
+    trades = +0.68R per trade, roughly 10x a real intraday system. R-multiples
+    are scale-invariant, so no choice of account size hides it.
+
+It also depends on data/backtest_v1.db, which is gitignored and not present in
+a fresh clone, so it cannot be re-run to verify any of the above.
+
+Kept for provenance only.
+
 WARNING: Generated from backtest data (2024.01-2026.02, n=10,169). Not live trading results.
 
 Usage:
     python scripts/research/generate_backtest_mock.py
 """
+
+import sys as _sys
+
+if __name__ == "__main__":
+    _sys.exit(
+        "generate_backtest_mock.py is deprecated and refuses to run.\n"
+        "Use: python scripts/research/generate_demo_mock.py --check"
+    )
 
 import json
 import math
