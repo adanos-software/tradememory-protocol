@@ -326,7 +326,13 @@ try:
         regime=st.sampled_from([None, "trending_up", "trending_down", "ranging", "volatile"]),
         atr=st.one_of(st.none(), st.floats(min_value=1.0, max_value=200.0)),
     )
-    @settings(max_examples=50)
+    # deadline=None: each example creates and deletes a SQLite file on disk, so
+    # the first example pays cold-filesystem cost (measured 754ms here) while
+    # later ones run in ~130ms. Hypothesis flags that spread itself
+    # ("Unreliable test timings!"). The deadline is timing infrastructure, not
+    # the assertion under test - the property being checked is still that the
+    # score stays within [0, 10] for every generated input.
+    @settings(max_examples=50, deadline=None)
     def test_property_dqs_bounded(proposed_lot, regime, atr):
         """DQS score should always be in [0, 10] regardless of inputs."""
         from tradememory.owm.dqs import DQSEngine
