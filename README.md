@@ -40,6 +40,12 @@ Used in production by traders running pre-flight checklists before every positio
 
 Works with any market (stocks, forex, crypto, futures), any broker, any AI platform. TradeMemory doesn't execute trades or touch your money — it only records and recalls.
 
+## See the interface
+
+**[tradememory-dashboard.onrender.com](https://tradememory-dashboard.onrender.com)** — the dashboard running on an illustrative demo dataset. Nothing to install.
+
+It is an interface preview, not a track record: the trades are synthetic and every figure on it is labelled as such. For what the memory layer actually does in a terminal, `pip install tradememory-protocol && tradememory demo --fast` replays 30 trades and shows the recall and parameter adjustment it derives from them.
+
 ## Quick Start
 
 ```bash

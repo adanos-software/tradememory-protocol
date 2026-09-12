@@ -40,6 +40,12 @@ AI 交易堆疊缺少一層。每個 MCP server 都處理執行——下單、�
 
 相容任何市場（股票、外匯、加密貨幣、期貨）、任何券商、任何 AI 平台。TradeMemory 不執行交易也不碰你的資金——它只負責記錄和回憶。
 
+## 看看介面長什麼樣
+
+**[tradememory-dashboard.onrender.com](https://tradememory-dashboard.onrender.com)** 是跑在示範資料集上的儀表板，不用安裝任何東西。
+
+這是**介面預覽，不是績效紀錄**：裡面的交易是合成的，畫面上每個數字都有標註。想看記憶層在終端機裡實際做什麼，跑 `pip install tradememory-protocol && tradememory demo --fast`，它會重播 30 筆交易，並展示從中導出的回憶與參數調整。
+
 ## 快速開始
 
 ```bash
